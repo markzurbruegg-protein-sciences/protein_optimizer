@@ -1,0 +1,150 @@
+# Default protein optimization pipeline configuration
+# Customize and pass with: protein-opt run --config your_config.yaml
+
+pipeline:
+  steps:
+    - cysteine_scan
+    - motif_scan
+    - sequence_complexity
+    - find_homologs
+    - consensus_design
+    - pssm_analysis
+
+global:
+  protected_residues: []
+  expression_host: ecoli
+  output_dir: ./results
+
+# ──────────────────────────── Tier 1 ────────────────────────────
+cysteine_scan:
+  replacement_aas: ["S", "A"]
+
+motif_scan:
+  check_deamidation: true
+  check_oxidation: true
+  check_proteolysis: true
+  check_hydrophobic_runs: true
+
+sequence_complexity:
+  max_homopolymer: 4
+  max_proline_run: 3
+  window_size: 20
+  min_entropy: 2.0
+
+# ──────────────────────────── Tier 2 ────────────────────────────
+find_homologs:
+  database: uniref50
+  min_identity: 0.3
+  max_identity: 0.9
+  max_hits: 500
+  e_value: 1.0e-5
+
+consensus_design:
+  min_conservation: 0.4
+  max_mutations: 10
+
+pssm_analysis:
+  pseudocount: 1
+  threshold: 1.0
+  max_mutations: 10
+
+# ──────────────────────────── Tier 3 ────────────────────────────
+predict_structure:
+  method: boltz2
+  use_msa_server: true
+
+stability_ddg:
+  method: rosetta
+  scan_top_n: 20
+  ddg_threshold: -0.5
+
+disulfide_design:
+  min_cb_distance: 3.5
+  max_cb_distance: 4.5
+  min_sequence_separation: 4
+
+cavity_fill:
+  min_volume: 20.0
+  max_mutations: 10
+
+surface_patch:
+  sasa_threshold: 0.25
+  patch_min_size: 3
+  max_mutations: 10
+
+# ──────────────────────────── Tier 4 ────────────────────────────
+e1_score:
+  model: Profluent-Bio/E1-600m
+  retrieval_augmented: true
+  max_homologs_context: 8
+  batch_size: 4
+  score_existing: true
+  site_saturation: false
+  top_k_positions: 5
+
+esm1v_score:
+  n_models: 5
+  score_existing: true
+  site_saturation: false
+  top_k_positions: 5
+
+proteinmpnn_design:
+  proteinmpnn_dir: ""
+  use_soluble_model: true
+  omit_aas: "C"
+  sampling_temp: 0.1
+  num_sequences: 8
+  redesign_mode: all
+
+esmif1_score:
+  chain_id: A
+
+combine_variants:
+  max_single_mutations: 15
+  max_combination_order: 3
+  max_library_size: 200
+  min_score_threshold: 0.0
+
+# ──────────────────────────── Tier 5 ────────────────────────────
+rfdiffusion_diversify:
+  rfdiffusion_dir: ""
+  partial_T: 15
+  T: 50
+  num_designs: 5
+  conda_env: SE3nv
+
+design_validate:
+  min_plddt: 70.0
+  max_rmsd: 2.0
+  mpnn:
+    num_sequences: 4
+    sampling_temp: 0.1
+  boltz:
+    use_msa_server: false
+
+motif_scaffold:
+  rfdiffusion_dir: ""
+  motif_residues: []
+  scaffold_length: [80, 120]
+  num_designs: 5
+  conda_env: SE3nv
+
+# ──────────────────────────── Scoring ────────────────────────────
+scoring:
+  weights:
+    e1_fitness: 0.25
+    esm1v_delta: 0.20
+    esmif1_delta: 0.15
+    mpnn_score: 0.10
+    consensus_score: 0.10
+    pssm_delta: 0.10
+    ddg: 0.05
+    cavity_burial: 0.025
+    surface_sap: 0.025
+
+  filters:
+    max_mutations: 15
+    min_plddt: 60.0
+    max_ddg: 5.0
+    forbid_new_cysteines: true
+    forbid_prolines_in_helix: true
