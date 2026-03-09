@@ -44,16 +44,37 @@ class CombineVariantsStep(BaseStep):
         candidates: list[ProteinCandidate] = []
         warnings: list[str] = []
 
-        # Identify parent candidates and collect mutations from variants
+        # --- Collect mutations from ALL prior steps, not just the last ---
+        prior_results: dict[str, StepResult] = config.get("_prior_results", {})
+
+        # Identify parent candidates from the current input
         parents = [c for c in step_input.candidates if c.parent_id is None]
         variants = [c for c in step_input.candidates if c.parent_id is not None]
+
+        # Also collect all variants from prior step results
+        all_prior_variants: list[ProteinCandidate] = list(variants)
+        seen_ids: set[str] = {v.candidate_id for v in variants}
+        for step_name_key, prior_result in prior_results.items():
+            if step_name_key == self.name:
+                continue
+            if not isinstance(prior_result, StepResult):
+                continue
+            for c in prior_result.candidates:
+                if c.parent_id is not None and c.candidate_id not in seen_ids:
+                    all_prior_variants.append(c)
+                    seen_ids.add(c.candidate_id)
+
+        logger.info(
+            f"Collected {len(all_prior_variants)} total variants from "
+            f"{len(prior_results)} prior steps + current input"
+        )
 
         for parent in parents:
             candidates.append(parent)
 
             # Gather all single-point mutations for this parent
             parent_variants = [
-                v for v in variants if v.parent_id == parent.candidate_id
+                v for v in all_prior_variants if v.parent_id == parent.candidate_id
             ]
 
             # Collect unique mutations with their best scores

@@ -37,6 +37,7 @@ class PredictStructureStep(BaseStep):
     def run(self, step_input: StepResult, config: dict[str, Any]) -> StepResult:
         method = config.get("method", "boltz2")
         use_msa_server = config.get("use_msa_server", True)
+        conda_env = config.get("conda_env", "boltz2-env")
         output_dir = Path(config.get("_global", {}).get("output_dir", "./results"))
         structures_dir = output_dir / "structures"
         structures_dir.mkdir(parents=True, exist_ok=True)
@@ -44,22 +45,28 @@ class PredictStructureStep(BaseStep):
         candidates: list[ProteinCandidate] = []
         warnings: list[str] = []
 
+        # Only predict structure for parent/WT candidates (not every variant)
+        parents_needing_structure = []
         for parent in step_input.candidates:
-            # Skip if structure already exists
+            candidates.append(parent)
+            if parent.parent_id is not None:
+                continue  # variants inherit parent structure
             if parent.structure_path and Path(parent.structure_path).exists():
-                logger.info(f"{parent.name}: Structure already exists, skipping prediction.")
-                candidates.append(parent)
+                logger.info(f"{parent.name}: Structure already exists, skipping.")
                 continue
+            parents_needing_structure.append(parent)
 
+        for parent in parents_needing_structure:
             pdb_path = structures_dir / f"{parent.name or parent.candidate_id}.pdb"
 
             if method == "boltz2":
-                success = _predict_boltz2(parent, pdb_path, use_msa_server, structures_dir)
+                success = _predict_boltz2(
+                    parent, pdb_path, use_msa_server, structures_dir, conda_env
+                )
             elif method == "esmfold":
                 success = _predict_esmfold(parent, pdb_path)
             else:
                 warnings.append(f"Unknown method '{method}'. Use 'boltz2' or 'esmfold'.")
-                candidates.append(parent)
                 continue
 
             if success and pdb_path.exists():
@@ -69,9 +76,26 @@ class PredictStructureStep(BaseStep):
                     parent.scores["plddt"] = plddt
                     logger.info(f"{parent.name}: pLDDT = {plddt:.1f}")
             else:
-                warnings.append(f"{parent.name}: Structure prediction failed with {method}.")
+                # Also try CIF
+                cif_path = pdb_path.with_suffix(".cif")
+                if cif_path.exists():
+                    parent.structure_path = str(cif_path)
+                    logger.info(f"{parent.name}: Structure saved as CIF")
+                else:
+                    warnings.append(
+                        f"{parent.name}: Structure prediction failed with {method}."
+                    )
 
-            candidates.append(parent)
+        # Propagate structure path to variants that share the same parent
+        parent_structures = {
+            c.candidate_id: c.structure_path
+            for c in candidates
+            if c.parent_id is None and c.structure_path
+        }
+        for c in candidates:
+            if c.parent_id and not c.structure_path:
+                if c.parent_id in parent_structures:
+                    c.structure_path = parent_structures[c.parent_id]
 
         return StepResult(
             step_name=self.name,
@@ -86,12 +110,15 @@ def _predict_boltz2(
     output_pdb: Path,
     use_msa_server: bool,
     work_dir: Path,
+    conda_env: str = "boltz2-env",
 ) -> bool:
-    """Predict structure using Boltz-2.
+    """Predict structure using Boltz-2 via conda env dispatch.
 
     Boltz expects YAML input describing the biomolecule.
     """
     try:
+        import shutil
+
         # Create Boltz-2 YAML input
         yaml_dir = work_dir / "boltz_inputs"
         yaml_dir.mkdir(parents=True, exist_ok=True)
@@ -107,40 +134,52 @@ def _predict_boltz2(
         with open(yaml_path, "w") as f:
             f.write(yaml_content)
 
-        # Run Boltz predict
-        cmd = ["boltz", "predict", str(yaml_path)]
-        if use_msa_server:
-            cmd.append("--use_msa_server")
-        cmd.extend(["--out_dir", str(work_dir / "boltz_output")])
+        boltz_out = work_dir / "boltz_output"
 
-        logger.info(f"Running Boltz-2 for {candidate.name}...")
+        # Build command — dispatch to conda env
+        boltz_cmd = ["boltz", "predict", str(yaml_path)]
+        if use_msa_server:
+            boltz_cmd.append("--use_msa_server")
+        boltz_cmd.extend(["--out_dir", str(boltz_out)])
+
+        cmd = [
+            "conda", "run", "--no-capture-output", "-n", conda_env,
+        ] + boltz_cmd
+
+        logger.info(
+            f"Running Boltz-2 for {candidate.name} in conda env '{conda_env}'..."
+        )
         result = subprocess.run(
-            cmd, check=True, capture_output=True, text=True, timeout=1800
+            cmd, capture_output=True, text=True, timeout=1800
         )
 
-        # Find output PDB
-        boltz_out = work_dir / "boltz_output"
+        if result.returncode != 0:
+            logger.error(f"Boltz-2 failed (exit {result.returncode}):\n{result.stderr[:500]}")
+            return False
+
+        # Find output PDB or CIF
         pdb_files = list(boltz_out.rglob("*.pdb"))
         if pdb_files:
-            import shutil
             shutil.copy(pdb_files[0], output_pdb)
             return True
-        else:
-            # Try CIF format
-            cif_files = list(boltz_out.rglob("*.cif"))
-            if cif_files:
-                import shutil
-                shutil.copy(cif_files[0], output_pdb.with_suffix(".cif"))
-                # Also save as reference
-                output_pdb_cif = output_pdb.with_suffix(".cif")
-                return True
 
-        logger.warning("Boltz-2 ran but no output PDB found.")
+        cif_files = list(boltz_out.rglob("*.cif"))
+        if cif_files:
+            cif_dest = output_pdb.with_suffix(".cif")
+            shutil.copy(cif_files[0], cif_dest)
+            # Convert CIF→PDB with BioPython if possible
+            if _cif_to_pdb(cif_dest, output_pdb):
+                return True
+            # Keep CIF as-is — downstream steps can handle it
+            logger.info(f"Structure saved as CIF: {cif_dest}")
+            return True
+
+        logger.warning("Boltz-2 ran but no output structure found.")
         return False
 
     except FileNotFoundError:
         logger.error(
-            "Boltz-2 not found. Install: pip install boltz[cuda]"
+            "conda or Boltz-2 not found. Ensure boltz2-env is set up."
         )
         return False
     except subprocess.CalledProcessError as e:
@@ -148,6 +187,21 @@ def _predict_boltz2(
         return False
     except subprocess.TimeoutExpired:
         logger.error("Boltz-2 timed out after 1800s")
+        return False
+
+
+def _cif_to_pdb(cif_path: Path, pdb_path: Path) -> bool:
+    """Convert CIF to PDB format using BioPython."""
+    try:
+        from Bio.PDB import MMCIFParser, PDBIO
+        parser = MMCIFParser(QUIET=True)
+        structure = parser.get_structure("protein", str(cif_path))
+        io = PDBIO()
+        io.set_structure(structure)
+        io.save(str(pdb_path))
+        return True
+    except Exception as e:
+        logger.debug(f"CIF→PDB conversion failed: {e}")
         return False
 
 

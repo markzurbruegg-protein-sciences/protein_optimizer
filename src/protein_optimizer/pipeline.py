@@ -102,12 +102,18 @@ class Pipeline:
             logger.info(f"Saved {step_name} result to {output_dir / f'{step_name}.json'}")
 
         # Aggregate scores and generate report
-        self._finalize(current, output_dir)
+        self._finalize(current, output_dir, input_path=Path(input_path))
 
         logger.info(f"Pipeline complete. {len(current.candidates)} final candidates.")
         return current
 
-    def _finalize(self, result: StepResult, output_dir: Path) -> None:
+    def _finalize(
+        self,
+        result: StepResult,
+        output_dir: Path,
+        *,
+        input_path: Path | None = None,
+    ) -> None:
         """Run score aggregation, filtering, and report generation."""
         try:
             from protein_optimizer.scoring.aggregator import aggregate_scores
@@ -125,16 +131,73 @@ class Pipeline:
         except Exception as e:
             logger.warning(f"Filtering skipped: {e}")
 
+        # Determine report output directory: same folder as the input FASTA
+        report_dir = output_dir
+        if input_path:
+            fasta_dir = Path(input_path).resolve().parent
+            if fasta_dir.is_dir():
+                report_dir = fasta_dir
+
+        # ── v2 report (3D viewer + metrics) ──
         try:
-            from protein_optimizer.reporting.html_report import generate_html_report
-            report_path = output_dir / "report.html"
-            generate_html_report(
+            from protein_optimizer.reporting.report_v2 import generate_report_v2
+
+            # Find PDB file from structure prediction
+            pdb_path = None
+            struct_result = self.results.get("predict_structure")
+            if struct_result:
+                for c in struct_result.candidates:
+                    sp = c.metadata.get("structure_path", "")
+                    if sp and Path(sp).exists():
+                        pdb_path = sp
+                        break
+            # Fallback: look in structures/
+            if not pdb_path:
+                struct_dir = output_dir / "structures"
+                for ext in ("*.pdb", "*.PDB"):
+                    pdbs = list(struct_dir.glob(ext))
+                    if pdbs:
+                        pdb_path = str(pdbs[0])
+                        break
+
+            parent_name = ""
+            for c in result.candidates:
+                if c.parent_id is None:
+                    parent_name = c.name
+                    break
+            report_title = f"{parent_name} — Protein Optimization Report"
+
+            report_path = report_dir / "report.html"
+            generate_report_v2(
                 results=self.results,
                 output_path=report_path,
+                pdb_path=pdb_path,
+                title=report_title,
                 config=self.config,
             )
+            logger.info(f"Report v2 saved to {report_path}")
+
+            # Also save a copy in the results directory if different
+            if report_dir != output_dir:
+                generate_report_v2(
+                    results=self.results,
+                    output_path=output_dir / "report.html",
+                    pdb_path=pdb_path,
+                    title=report_title,
+                    config=self.config,
+                )
         except Exception as e:
-            logger.warning(f"Report generation skipped: {e}")
+            logger.warning(f"Report v2 generation failed: {e}", exc_info=True)
+            # Fallback to v1
+            try:
+                from protein_optimizer.reporting.html_report import generate_html_report
+                generate_html_report(
+                    results=self.results,
+                    output_path=output_dir / "report.html",
+                    config=self.config,
+                )
+            except Exception as e2:
+                logger.warning(f"Report generation skipped: {e2}")
 
 
 def _import_all_steps() -> None:

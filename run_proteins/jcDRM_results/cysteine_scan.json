@@ -1,0 +1,341 @@
+{
+  "step_name": "cysteine_scan",
+  "timestamp": "2026-03-09T13:19:15.368227+00:00",
+  "config_used": {
+    "replacement": "S",
+    "generate_remove_all": true,
+    "_global": {
+      "protected_residues": [],
+      "expression_host": "ecoli",
+      "output_dir": "./run_proteins/jcDRM_results"
+    }
+  },
+  "warnings": [],
+  "metadata": {
+    "replacement_aa": "S"
+  },
+  "candidates": [
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM",
+      "candidate_id": "73ab8a2158da",
+      "parent_id": null,
+      "structure_path": null,
+      "mutations": [],
+      "scores": {},
+      "metadata": {}
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFSAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C69S",
+      "candidate_id": "f4c5e462abd8",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 69,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.5,
+          "metadata": {
+            "context": "DSKYF[C]AAARK"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.5
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNSLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C119S",
+      "candidate_id": "476388ed1860",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 119,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {
+            "context": "RTKLN[C]LQTCV"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.65
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTSVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C123S",
+      "candidate_id": "742af5a72031",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 123,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {
+            "context": "NCLQT[C]VGSAK"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.65
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDESRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C156S",
+      "candidate_id": "5c3b6e126d66",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 156,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {
+            "context": "FVLDE[C]RKWNL"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.65
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRSWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C267S",
+      "candidate_id": "28efdd699128",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 267,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {
+            "context": "RNIMR[C]WWEQT"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.65
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNSFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C298S",
+      "candidate_id": "27f04c71a7a9",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 298,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {
+            "context": "EQLMN[C]FGGFD"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.65
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPSANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C311S",
+      "candidate_id": "cdd7df66cd9b",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 311,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {
+            "context": "VGGSP[C]ANLAG"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.65
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYSRILDLVKCIMTRT",
+      "name": "jcDRM_C337S",
+      "candidate_id": "b4d67c185f6f",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 337,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.8,
+          "metadata": {
+            "context": "LFFDY[C]RILDL"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.8
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKSIMTRT",
+      "name": "jcDRM_C345S",
+      "candidate_id": "24154ad23f2a",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 345,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {
+            "context": "LDLVK[C]IMTRT"
+          }
+        }
+      ],
+      "scores": {
+        "cys_risk": 0.65
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFSAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNSLQTSVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDESRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRSWWEQTNQSGTLIDIVDVQHLNADRLEQLMNSFGGFDLVVGGSPSANLAGSNRHHRDGLEGKESSLFFDYSRILDLVKSIMTRT",
+      "name": "jcDRM_no_cys",
+      "candidate_id": "5cb1a871928c",
+      "parent_id": "73ab8a2158da",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 69,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.5,
+          "metadata": {}
+        },
+        {
+          "position": 119,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {}
+        },
+        {
+          "position": 123,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {}
+        },
+        {
+          "position": 156,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {}
+        },
+        {
+          "position": 267,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {}
+        },
+        {
+          "position": 298,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {}
+        },
+        {
+          "position": 311,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {}
+        },
+        {
+          "position": 337,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.8,
+          "metadata": {}
+        },
+        {
+          "position": 345,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "cysteine_scan",
+          "score": 0.65,
+          "metadata": {}
+        }
+      ],
+      "scores": {
+        "cys_risk": 5.8500000000000005
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    }
+  ]
+}

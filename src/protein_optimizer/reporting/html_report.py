@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from protein_optimizer.models import ProteinCandidate, StepResult
+from protein_optimizer.reporting.narratives import generate_step_narratives
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +62,19 @@ def generate_html_report(
         score_keys.update(c.scores.keys())
     score_keys = sorted(score_keys)
 
+    # Generate narrative summaries for each step
+    narratives = generate_step_narratives(results)
+
+    # Build cross-tier recommendation summary
+    from protein_optimizer.reporting.narratives import generate_recommendation_summary
+    recommendation = generate_recommendation_summary(results)
+
     # Build HTML
     html_parts = [
         _html_header(title),
         _summary_section(results, parents, variants, score_keys),
+        recommendation,
+        _analysis_narrative_section(narratives),
         _candidate_table(variants, score_keys),
         _mutation_summary(variants),
         _warnings_section(all_warnings),
@@ -117,6 +127,12 @@ def _html_header(title: str) -> str:
   .step-tag {{ display: inline-block; background: var(--card-bg); border: 1px solid var(--border);
               border-radius: 4px; padding: 0.1rem 0.4rem; margin: 0.1rem; font-size: 0.75rem; }}
   .overflow-x {{ overflow-x: auto; }}
+  .narrative-block {{ background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+                     padding: 1.25rem 1.5rem; margin: 1rem 0; }}
+  .narrative-block h3 {{ color: var(--accent); font-size: 1.1rem; margin-bottom: 0.75rem; }}
+  .narrative-block h4 {{ color: var(--fg); font-size: 0.95rem; margin: 1rem 0 0.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }}
+  .narrative-content p {{ margin: 0.5rem 0; font-size: 0.9rem; line-height: 1.6; }}
+  .narrative-content table {{ margin: 0.5rem 0; font-size: 0.85rem; }}
 </style>
 </head>
 <body>
@@ -250,6 +266,18 @@ def _mutation_summary(variants: list[ProteinCandidate]) -> str:
 <tbody>{''.join(rows)}</tbody>
 </table>
 """
+
+
+def _analysis_narrative_section(narratives: list[str]) -> str:
+    """Render the step-by-step analysis narrative."""
+    if not narratives:
+        return ""
+    return (
+        '<h2>Step-by-Step Analysis</h2>\n'
+        '<p style="color:#8b949e;font-size:0.9rem;margin-bottom:1rem">'
+        'Detailed explanation of what each optimization step found and proposed.</p>\n'
+        + "\n".join(narratives)
+    )
 
 
 def _warnings_section(warnings: list[tuple[str, str]]) -> str:
