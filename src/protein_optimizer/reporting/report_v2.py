@@ -10,6 +10,7 @@ Generates a self-contained HTML report with:
 from __future__ import annotations
 
 import html as _html
+import json
 import logging
 import math
 import re
@@ -96,13 +97,14 @@ def generate_report_v2(
     # Per-step mutations
     step_mutations = _collect_step_mutations(results)
 
+    # Per-tier mutation data for 3D viewer
+    tier_mut_data = _collect_tier_viewer_data(step_mutations)
+
     # Build HTML
     parts = [
         _header_html(title),
-        _hero_section(parent, metrics, pdb_text, highlight_positions, variants_ranked),
-        _top_mutations_section(variants_ranked[:10]),
-        _sequence_liabilities_section(results),
-        _pipeline_breakdown(step_mutations, results),
+        _hero_section(parent, metrics, pdb_text, highlight_positions, variants_ranked, tier_mut_data),
+        _stage_sections(step_mutations, results),
         _footer_html(),
     ]
 
@@ -522,10 +524,84 @@ tr:hover {{ background: var(--hover); }}
 .legend .dot {{
   width: 10px; height: 10px; border-radius: 50%; display: inline-block;
 }}
+
+/* ── Viewer toolbar & legend ── */
+.viewer-toolbar {{
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 2; display: flex; align-items: center; gap: 3px;
+  background: rgba(22,27,34,0.92); padding: 4px 6px;
+  border-radius: 8px; border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}}
+.view-btn {{
+  padding: 5px 12px; border-radius: 5px; border: 1px solid transparent;
+  background: transparent; color: #8b949e; cursor: pointer;
+  font-size: 0.73rem; font-weight: 600; transition: all 0.15s;
+  white-space: nowrap; font-family: inherit;
+}}
+.view-btn:hover {{ background: rgba(88,166,255,0.12); color: var(--fg); }}
+.view-btn.active {{ background: var(--accent); color: #000; border-color: var(--accent); }}
+.toolbar-sep {{ width: 1px; height: 20px; background: var(--border); margin: 0 4px; }}
+.viewer-legend {{
+  position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+  z-index: 2; font-size: 0.73rem; color: #c9d1d9;
+  background: rgba(22,27,34,0.85); padding: 5px 14px; border-radius: 6px;
+  border: 1px solid var(--border); backdrop-filter: blur(8px);
+  white-space: nowrap; display: flex; align-items: center; gap: 0.7rem;
+}}
+
+/* ── Tier selector bar (top of viewer) ── */
+.tier-toolbar {{
+  position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
+  z-index: 2; display: flex; align-items: center; gap: 3px;
+  background: rgba(22,27,34,0.92); padding: 3px 6px;
+  border-radius: 7px; border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}}
+.tier-btn {{
+  padding: 4px 10px; border-radius: 4px; border: 1px solid transparent;
+  background: transparent; color: #8b949e; cursor: pointer;
+  font-size: 0.70rem; font-weight: 600; transition: all 0.15s;
+  white-space: nowrap; font-family: inherit;
+}}
+.tier-btn:hover {{ background: rgba(88,166,255,0.12); color: var(--fg); }}
+.tier-btn.active {{ background: var(--purple); color: #000; border-color: var(--purple); }}
+.tier-btn .tier-pip {{
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  margin-right: 3px; vertical-align: middle;
+}}
 </style>
 </head>
 <body>
 """
+
+
+def _collect_tier_viewer_data(
+    step_mutations: dict[str, list[ProteinCandidate]],
+) -> dict[int, list[dict[str, Any]]]:
+    """Collect unique mutations per tier for 3D viewer highlighting."""
+    tier_pos: dict[int, dict[int, dict[str, Any]]] = {}
+    for step_name, variants in step_mutations.items():
+        tier = _TIER_MAP.get(step_name, 0)
+        if tier == 0:
+            continue
+        if tier not in tier_pos:
+            tier_pos[tier] = {}
+        for v in variants:
+            score = v.scores.get("composite_score", max(v.scores.values()) if v.scores else 0)
+            for mut in v.mutations:
+                prev = tier_pos[tier].get(mut.position)
+                if prev is None or score > prev["score"]:
+                    tier_pos[tier][mut.position] = {
+                        "pos": mut.position,
+                        "label": f"{mut.wt}{mut.position}{mut.mut}",
+                        "score": score,
+                    }
+    result: dict[int, list[dict[str, Any]]] = {}
+    for tier_num in sorted(tier_pos):
+        items = sorted(tier_pos[tier_num].values(), key=lambda x: x["score"], reverse=True)
+        result[tier_num] = items[:20]
+    return result
 
 
 def _hero_section(
@@ -534,11 +610,13 @@ def _hero_section(
     pdb_text: str,
     highlight_positions: list[int],
     variants_ranked: list[ProteinCandidate],
+    tier_mut_data: dict[int, list[dict[str, Any]]] | None = None,
 ) -> str:
     """Build the hero area: 3D viewer + metrics sidebar."""
 
     name = parent.name if parent else "Unknown"
     length = metrics.get("length", 0)
+    tier_mut_data = tier_mut_data or {}
 
     # Top-5 mutation labels for legend
     top5_labels = []
@@ -553,20 +631,14 @@ def _hero_section(
         if len(top5_labels) >= 5:
             break
 
-    # 3Dmol viewer initialization script
-    sel_js_parts = []
-    for i, pos in enumerate(highlight_positions):
-        color = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#bc8cff"][i % 5]
-        sel_js_parts.append(
-            f"viewer.addStyle({{resi: {pos}}}, "
-            f"{{stick: {{radius: 0.18, color: '{color}'}}, "
-            f"cartoon: {{color: '{color}'}}}});\n"
-            f"viewer.addLabel('{top5_labels[i] if i < len(top5_labels) else pos}', "
-            f"{{position: viewer.selectedAtoms({{resi: {pos}, atom: 'CA'}})[0], "
-            f"backgroundColor: '{color}', backgroundOpacity: 0.85, "
-            f"fontColor: '#000', fontSize: 12, showBackground: true}});"
-        )
-    highlight_js = "\n".join(sel_js_parts)
+    # Highlight data for JS (as JSON for inline embedding)
+    _hl_colors = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#bc8cff"]
+    hl_positions_js = json.dumps(highlight_positions)
+    hl_labels_js = json.dumps(top5_labels[:5])
+    hl_colors_js = json.dumps(_hl_colors[:max(len(highlight_positions), 1)])
+
+    # Tier data for JS
+    tier_js = json.dumps({str(k): v for k, v in tier_mut_data.items()})
 
     # Escape PDB for JS embedding
     pdb_escaped = pdb_text.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
@@ -618,6 +690,17 @@ def _hero_section(
   <div class="viewer-wrap">
     <span class="viewer-label">3Dmol.js &middot; Boltz-2 predicted structure &middot; pLDDT coloring</span>
     <div id="viewport"></div>
+    <div class="tier-toolbar" id="tier-bar"></div>
+    <div class="viewer-legend" id="view-legend"></div>
+    <div class="viewer-toolbar">
+      <button class="view-btn mode active" data-mode="plddt" onclick="setView('plddt')">Confidence</button>
+      <button class="view-btn mode" data-mode="hydrophobicity" onclick="setView('hydrophobicity')">Hydrophobicity</button>
+      <button class="view-btn mode" data-mode="charge" onclick="setView('charge')">Charge</button>
+      <button class="view-btn mode" data-mode="ss" onclick="setView('ss')">2&deg; Structure</button>
+      <div class="toolbar-sep"></div>
+      <button class="view-btn" id="btn-surface" onclick="toggleSurface()">Surface</button>
+      <button class="view-btn active" id="btn-mutations" onclick="toggleMutations()">Mutations</button>
+    </div>
   </div>
 
   <!-- Metrics -->
@@ -667,117 +750,215 @@ def _hero_section(
 <script>
 (function() {{
   var pdbData = `{pdb_escaped}`;
-  var viewer = $3Dmol.createViewer("viewport", {{backgroundColor: "black"}});
+  var viewer = $3Dmol.createViewer("viewport", {{backgroundColor:"#000"}});
   viewer.addModel(pdbData, "pdb");
 
-  // Base style: cartoon coloured by pLDDT (B-factor)
-  viewer.setStyle({{}}, {{cartoon: {{
-    colorfunc: function(atom) {{
-      var b = atom.b;
-      if (b >= 90) return '#3fb950';
-      if (b >= 70) return '#58a6ff';
-      if (b >= 50) return '#d29922';
-      return '#f85149';
+  var hlPos = {hl_positions_js};
+  var hlLbl = {hl_labels_js};
+  var hlClr = {hl_colors_js};
+  var surfOn = false, mutOn = true, curView = "plddt";
+
+  // Per-tier mutation data
+  var tierData = {tier_js};
+  var curTier = "all";
+  var tierNames = {{1:"Sequence Heuristics",2:"Evolutionary Analysis",
+    3:"Structure-based",4:"AI / ML Scoring",5:"Generative Design"}};
+  var tierColors = {{1:"#3fb950",2:"#58a6ff",3:"#d29922",4:"#bc8cff",5:"#f85149"}};
+  var mutColors = ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#bc8cff",
+    "#ff9ff3","#54a0ff","#5f27cd","#01a3a4","#f368e0",
+    "#ff6348","#7bed9f","#70a1ff","#dfe6e9","#ffeaa7",
+    "#fd79a8","#00cec9","#e17055","#0984e3","#6c5ce7"];
+
+  // Build tier toolbar buttons
+  (function buildTierBar() {{
+    var bar = document.getElementById("tier-bar");
+    var keys = Object.keys(tierData).sort();
+    if(keys.length === 0) {{ bar.style.display = "none"; return; }}
+    var allBtn = '<button class="tier-btn active" data-tier="all">' +
+      '<span class="tier-pip" style="background:#c9d1d9"></span>Top 5</button>';
+    bar.innerHTML = allBtn;
+    keys.forEach(function(k) {{
+      var n = tierData[k].length;
+      var cl = tierColors[k] || "#8b949e";
+      bar.innerHTML += '<button class="tier-btn" data-tier="'+k+'">' +
+        '<span class="tier-pip" style="background:'+cl+'"></span>Tier '+k+
+        ' <span style="opacity:0.6;font-size:0.65rem">('+n+')</span></button>';
+    }});
+    bar.addEventListener("click", function(e) {{
+      var btn = e.target.closest(".tier-btn");
+      if(btn) window.setTier(btn.dataset.tier);
+    }});
+  }})();
+
+  var aa3 = {{ALA:"A",ARG:"R",ASN:"N",ASP:"D",CYS:"C",GLU:"E",GLN:"Q",
+    GLY:"G",HIS:"H",ILE:"I",LEU:"L",LYS:"K",MET:"M",PHE:"F",
+    PRO:"P",SER:"S",THR:"T",TRP:"W",TYR:"Y",VAL:"V"}};
+  var hyd = {{A:1.8,R:-4.5,N:-3.5,D:-3.5,C:2.5,E:-3.5,Q:-3.5,G:-0.4,
+    H:-3.2,I:4.5,L:3.8,K:-3.9,M:1.9,F:2.8,P:-1.6,S:-0.8,
+    T:-0.7,W:-0.9,Y:-1.3,V:4.2}};
+  var chg = {{D:-1,E:-1,K:1,R:1,H:0.5}};
+
+  function hex(r,g,b) {{
+    return "#"+[r,g,b].map(function(v){{
+      return Math.round(v*255).toString(16).padStart(2,"0");
+    }}).join("");
+  }}
+
+  function plddtC(a) {{
+    var b=a.b;
+    if(b>=90) return "#3fb950"; if(b>=70) return "#58a6ff";
+    if(b>=50) return "#d29922"; return "#f85149";
+  }}
+
+  function hydroC(a) {{
+    var c=aa3[a.resn]||"G", h=hyd[c]||0, t=(h+4.5)/9;
+    if(t<0.5) {{ var s=t*2; return hex(0.2+0.8*s, 0.4+0.6*s, 1); }}
+    else {{ var s=(t-0.5)*2; return hex(1, 1-0.6*s, 1-0.9*s); }}
+  }}
+
+  function chargeC(a) {{
+    var c=aa3[a.resn]||"G", q=chg[c]||0;
+    if(q>0) return hex(0.3, 0.5, 1);
+    if(q<0) return hex(1, 0.3, 0.3);
+    return "#aaaaaa";
+  }}
+
+  function ssC(a) {{
+    if(a.ss==="h") return "#ff6b9d";
+    if(a.ss==="s") return "#ffd93d";
+    return "#8b949e";
+  }}
+
+  var cfMap = {{plddt:plddtC, hydrophobicity:hydroC, charge:chargeC, ss:ssC}};
+
+  function applyHL() {{
+    viewer.removeAllLabels();
+    if(!mutOn) return;
+    var positions, labels, colors;
+    if(curTier === "all") {{
+      positions = hlPos; labels = hlLbl; colors = hlClr;
+    }} else {{
+      var items = tierData[curTier] || [];
+      positions = items.map(function(d){{ return d.pos; }});
+      labels = items.map(function(d){{ return d.label; }});
+      colors = mutColors;
     }}
-  }}}});
+    for(var i=0; i<positions.length; i++) {{
+      var p=positions[i], cl=colors[i % colors.length];
+      viewer.addStyle({{resi:p}}, {{stick:{{radius:0.18, color:cl}}}});
+      var atoms = viewer.selectedAtoms({{resi:p, atom:"CA"}});
+      if(atoms.length)
+        viewer.addLabel(labels[i]||String(p), {{
+          position:atoms[0], backgroundColor:cl, backgroundOpacity:0.85,
+          fontColor:"#000", fontSize:12, showBackground:true
+        }});
+    }}
+  }}
 
-  // Highlight top-5 residues
-  {highlight_js}
+  window.setTier = function(t) {{
+    curTier = t;
+    mutOn = true;
+    document.getElementById("btn-mutations").classList.add("active");
+    window.setView(curView);
+    document.querySelectorAll(".tier-btn").forEach(function(b){{
+      b.classList.toggle("active",
+        (t==="all" && b.textContent.indexOf("Top 5")>=0) ||
+        (t!=="all" && b.textContent.indexOf("Tier "+t)>=0));
+    }});
+  }};
 
+  function updSurf() {{
+    viewer.removeAllSurfaces();
+    if(!surfOn) return;
+    viewer.addSurface($3Dmol.SurfaceType.VDW,
+      {{opacity:0.82, colorfunc:cfMap[curView]}});
+  }}
+
+  function updLegend(m) {{
+    var el = document.getElementById("view-legend");
+    if(m==="plddt") el.innerHTML =
+      '<span style="color:#3fb950">&#9679;</span>&thinsp;&#8805;90 '+
+      '<span style="color:#58a6ff">&#9679;</span>&thinsp;70&#8211;90 '+
+      '<span style="color:#d29922">&#9679;</span>&thinsp;50&#8211;70 '+
+      '<span style="color:#f85149">&#9679;</span>&thinsp;&lt;50';
+    else if(m==="hydrophobicity") el.innerHTML =
+      '<span style="display:inline-block;width:90px;height:10px;border-radius:3px;'+
+      'background:linear-gradient(to right,#3366ff,#ffffff,#ff6600);'+
+      'vertical-align:middle"></span> Hydrophilic &#8594; Hydrophobic';
+    else if(m==="charge") el.innerHTML =
+      '<span style="color:#4d80ff">&#9679;</span> Positive (K,R,H) '+
+      '<span style="color:#aaaaaa">&#9679;</span> Neutral '+
+      '<span style="color:#ff4d4d">&#9679;</span> Negative (D,E)';
+    else if(m==="ss") el.innerHTML =
+      '<span style="color:#ff6b9d">&#9679;</span> &#945;-Helix '+
+      '<span style="color:#ffd93d">&#9679;</span> &#946;-Sheet '+
+      '<span style="color:#8b949e">&#9679;</span> Coil/Loop';
+  }}
+
+  window.setView = function(m) {{
+    curView = m;
+    viewer.setStyle({{}}, {{cartoon:{{colorfunc:cfMap[m]}}}});
+    applyHL();
+    if(surfOn) updSurf();
+    viewer.render();
+    document.querySelectorAll(".view-btn.mode").forEach(function(b){{
+      b.classList.toggle("active", b.dataset.mode===m);
+    }});
+    var lbl = {{plddt:"pLDDT coloring", hydrophobicity:"Hydrophobicity (Kyte-Doolittle)",
+      charge:"Charge distribution", ss:"Secondary structure"}};
+    document.querySelector(".viewer-label").textContent =
+      "3Dmol.js \\u00b7 Boltz-2 \\u00b7 " + lbl[m];
+    updLegend(m);
+  }};
+
+  window.toggleSurface = function() {{
+    surfOn = !surfOn; updSurf(); viewer.render();
+    document.getElementById("btn-surface").classList.toggle("active", surfOn);
+  }};
+
+  window.toggleMutations = function() {{
+    mutOn = !mutOn; window.setView(curView);
+    document.getElementById("btn-mutations").classList.toggle("active", mutOn);
+  }};
+
+  // Initial render
+  viewer.setStyle({{}}, {{cartoon:{{colorfunc:plddtC}}}});
+  applyHL();
   viewer.zoomTo();
   viewer.render();
   viewer.zoom(1.1);
+  updLegend("plddt");
 }})();
 </script>
 """
 
 
-def _top_mutations_section(top10: list[ProteinCandidate]) -> str:
-    """Render top‑10 mutations summary table."""
-    if not top10:
-        return ""
-
-    rows = []
-    for i, v in enumerate(top10, 1):
-        badge_cls = {1: "gold", 2: "silver", 3: "bronze"}.get(i, "")
-        mut_strs = ", ".join(m.label for m in v.mutations) or "—"
-        n_mut = len(v.mutations)
-        source = v.mutations[0].source_step if v.mutations else "—"
-        comp = v.scores.get("composite_score", 0)
-        comp_css = "good" if comp > 0 else "bad" if comp < 0 else ""
-
-        # Collect key individual scores
-        score_parts = []
-        for key in ("esm1v_delta", "consensus_conservation", "pssm_log_odds",
-                     "disulfide_cb_distance", "cavity_burial", "surface_sap",
-                     "combo_mean"):
-            if key in v.scores:
-                score_parts.append(f"{key.split('_')[0]}={_fmt_score(v.scores[key])}")
-
-        rows.append(f"""<tr>
-  <td><span class="rank {badge_cls}">{i}</span></td>
-  <td><strong>{_html.escape(v.name)}</strong></td>
-  <td class="mono">{_html.escape(mut_strs)}</td>
-  <td>{n_mut}</td>
-  <td>{_html.escape(source)}</td>
-  <td class="{comp_css}">{comp:+.4f}</td>
-  <td class="muted" style="font-size:0.78rem">{'; '.join(score_parts)}</td>
-</tr>""")
-
-    return f"""
-<div class="content">
-<div class="section">
-  <h2>Top 10 Recommended Mutations</h2>
-  <p class="subtitle">Ranked by composite score (weighted combination of evolutionary, structural, and AI scores)</p>
-  <div class="tbl-wrap">
-  <table>
-    <thead><tr>
-      <th>#</th><th>Variant</th><th>Mutations</th><th>Count</th>
-      <th>Source</th><th>Composite</th><th>Detail Scores</th>
-    </tr></thead>
-    <tbody>
-      {''.join(rows)}
-    </tbody>
-  </table>
-  </div>
-</div>
-"""
-
-
 def _sequence_liabilities_section(results: dict[str, StepResult]) -> str:
-    """Combined cysteine-risk + motif-liability table."""
+    """Combined cysteine-risk + motif-liability table (for Stage 1)."""
     cys_result = results.get("cysteine_scan")
     motif_result = results.get("motif_scan")
 
     if not cys_result and not motif_result:
         return ""
 
-    # --- Collect rows: (position, wt_residue, category, risk, rationale, fix) ---
     rows: list[dict] = []
 
-    # Cysteine liabilities
     if cys_result:
         for c in cys_result.candidates:
             if c.parent_id is None:
                 continue
             for m in c.mutations:
-                ctx = (m.metadata or {}).get("context", "")
                 rows.append({
-                    "position": m.position,
-                    "residue": m.wt,
+                    "position": m.position, "residue": m.wt,
                     "category": "Unpaired Cys",
                     "risk": m.score or c.scores.get("cys_risk", 0),
-                    "rationale": f"Free cysteine — may cause unwanted disulfides or oxidation",
-                    "context": ctx,
+                    "rationale": "Free cysteine \u2014 may cause unwanted disulfides or oxidation",
                     "fix": m.label,
                 })
 
-    # Motif liabilities (from parent motif_hits metadata)
     if motif_result:
         parent = next((c for c in motif_result.candidates if c.parent_id is None), None)
-        hits = (parent.metadata.get("motif_hits", []) if parent else [])
-
-        # Build fix lookup from motif variants (fix can be at pos or pos+1)
+        hits = parent.metadata.get("motif_hits", []) if parent else []
         fix_map: dict[int, str] = {}
         for c in motif_result.candidates:
             if c.parent_id is None:
@@ -785,31 +966,32 @@ def _sequence_liabilities_section(results: dict[str, StepResult]) -> str:
             for m in c.mutations:
                 if m.source_step == "motif_scan":
                     fix_map[m.position] = m.label
-
         for hit in hits:
             pos = hit.get("position", 0)
-            fix = fix_map.get(pos, fix_map.get(pos + 1, "—"))
+            fix = fix_map.get(pos, fix_map.get(pos + 1, "\u2014"))
             rows.append({
                 "position": pos,
                 "residue": hit.get("residues", "?")[0],
                 "category": hit.get("category", "unknown").title(),
                 "risk": hit.get("risk", 0),
                 "rationale": hit.get("rationale", ""),
-                "context": hit.get("pattern", ""),
                 "fix": fix,
             })
 
-    # De-duplicate by position+category (cysteine variants come in pairs like C69S/C69A)
     seen: set[tuple[int, str]] = set()
-    unique_rows: list[dict] = []
+    unique: list[dict] = []
     for r in rows:
         key = (r["position"], r["category"])
         if key not in seen:
             seen.add(key)
-            unique_rows.append(r)
-    rows = sorted(unique_rows, key=lambda r: -r["risk"])
+            unique.append(r)
+    rows = sorted(unique, key=lambda r: -r["risk"])
 
-    # Risk colour helper
+    cat_colours = {
+        "Unpaired Cys": "#bc8cff", "Deamidation": "#58a6ff",
+        "Oxidation": "#d29922", "Proteolysis": "#f85149",
+    }
+
     def _risk_css(risk: float) -> str:
         if risk >= 0.65:
             return "bad"
@@ -817,45 +999,31 @@ def _sequence_liabilities_section(results: dict[str, StepResult]) -> str:
             return "warn"
         return "good"
 
-    # Category badge colour
-    cat_colours = {
-        "Unpaired Cys": "#bc8cff",
-        "Deamidation": "#58a6ff",
-        "Oxidation": "#d29922",
-        "Proteolysis": "#f85149",
-    }
-
     table_rows = []
     for r in rows:
         cat_col = cat_colours.get(r["category"], "#8b949e")
         css = _risk_css(r["risk"])
         table_rows.append(
-            f'<tr>'
-            f'<td>{r["position"]}</td>'
-            f'<td class="mono">{r["residue"]}</td>'
+            f'<tr><td>{r["position"]}</td><td class="mono">{r["residue"]}</td>'
             f'<td><span style="background:{cat_col};color:#000;padding:1px 7px;'
             f'border-radius:4px;font-size:0.78rem;font-weight:600">'
             f'{_html.escape(r["category"])}</span></td>'
             f'<td class="{css}" style="font-weight:600">{r["risk"]:.2f}</td>'
             f'<td style="font-size:0.84rem">{_html.escape(r["rationale"])}</td>'
-            f'<td class="mono">{_html.escape(r["fix"])}</td>'
-            f'</tr>'
+            f'<td class="mono">{_html.escape(r["fix"])}</td></tr>'
         )
 
     n_cys = sum(1 for r in rows if r["category"] == "Unpaired Cys")
     n_motif = len(rows) - n_cys
 
     return f"""
-<div class="section">
-  <h2>Sequence Liabilities</h2>
+  <h3 style="color:var(--accent);margin:1rem 0 0.3rem">Sequence Liabilities</h3>
   <p class="subtitle">
-    Residues flagged for chemical instability or processing risk.
-    <strong>Unpaired cysteines</strong> can form non-native disulfide bonds or get oxidised,
-    <strong>deamidation</strong> sites (Asn/Asp-Xxx) undergo spontaneous backbone rearrangements,
-    <strong>oxidation</strong>-prone methionines lose activity over time, and
-    <strong>proteolysis</strong> motifs (dibasic sites like KR/RK) are cleaved by host proteases.
-    Each row shows the risk score (0–1) and a suggested single-point fix.
-    {n_cys} cysteine liabilities and {n_motif} sequence motif liabilities were detected.
+    <strong>Unpaired cysteines</strong> may form non-native disulfides,
+    <strong>deamidation</strong> sites undergo backbone rearrangements,
+    <strong>oxidation</strong>-prone Met residues lose activity, and
+    <strong>proteolytic</strong> dibasic sites are cleaved by host proteases.
+    {n_cys} cysteine + {n_motif} motif liabilities detected.
   </p>
   <div class="tbl-wrap">
   <table>
@@ -863,55 +1031,131 @@ def _sequence_liabilities_section(results: dict[str, StepResult]) -> str:
       <th>Pos</th><th>Res</th><th>Category</th><th>Risk</th>
       <th>Rationale</th><th>Suggested Fix</th>
     </tr></thead>
-    <tbody>
-      {''.join(table_rows)}
-    </tbody>
+    <tbody>{''.join(table_rows)}</tbody>
   </table>
   </div>
-</div>
 """
 
 
-def _pipeline_breakdown(
+_STAGE_DESCRIPTIONS: dict[int, str] = {
+    1: (
+        "Quick sequence-level scans that flag chemical liabilities — unpaired cysteines, "
+        "deamidation/oxidation motifs, proteolytic sites, and low-complexity regions. "
+        "These are fast to compute and catch issues that affect shelf-life and manufacturability."
+    ),
+    2: (
+        "Evolutionary conservation from homologue alignments and PSSM analysis. "
+        "Positions conserved across orthologs are generally safer to keep, while variable "
+        "positions offer room for beneficial mutations."
+    ),
+    3: (
+        "Structure-aware engineering using the Boltz-2 predicted 3D model. "
+        "Includes disulfide design, cavity filling, and surface hydrophobic patch analysis "
+        "to improve thermostability and reduce aggregation."
+    ),
+    4: (
+        "Deep-learning scores from ESM-1v pseudo-log-likelihoods and combinatorial variant "
+        "assembly. These models capture co-evolutionary patterns not visible to classical methods."
+    ),
+    5: (
+        "Generative protein design using RFdiffusion and sequence-design validation. "
+        "Produces novel backbone/sequence variants that may outperform point-mutation approaches."
+    ),
+}
+
+
+def _stage_sections(
     step_mutations: dict[str, list[ProteinCandidate]],
     results: dict[str, StepResult],
 ) -> str:
-    """Per-step breakdown with 20 visible + expand to 100."""
+    """Build per-stage sections with recommended mutations and step details."""
 
-    # Steps shown in the combined Sequence Liabilities table — skip here
-    _COMBINED_STEPS = {"cysteine_scan", "motif_scan"}
+    # Group steps by tier
+    tier_steps: dict[int, list[str]] = {}
+    for step_name in results:
+        tier = _TIER_MAP.get(step_name, 0)
+        if tier == 0:
+            continue
+        tier_steps.setdefault(tier, []).append(step_name)
 
-    parts: list[str] = []
-    parts.append("""
+    parts: list[str] = ['<div class="content">']
+
+    for tier_num in sorted(tier_steps):
+        tier_label = _TIER_NAMES.get(tier_num, f"Tier {tier_num}")
+        tier_desc = _STAGE_DESCRIPTIONS.get(tier_num, "")
+        steps = tier_steps[tier_num]
+
+        # Collect top mutations from steps in this tier.
+        # Scoring / ranking tiers (e.g. Tier 4: esm1v_score, combine_variants)
+        # don't originate mutations — they score variants from earlier tiers.
+        # For those tiers we show the top-ranked variants regardless of source.
+        _SCORING_TIERS = {4, 5}
+        tier_step_set = set(steps)
+        tier_variants: list[ProteinCandidate] = []
+        for step in steps:
+            for v in step_mutations.get(step, []):
+                if tier_num in _SCORING_TIERS:
+                    # Scoring tier: include all variants ranked by this step
+                    tier_variants.append(v)
+                else:
+                    # Generative tier: keep variant only if a mutation originated here
+                    if any(m.source_step in tier_step_set for m in v.mutations):
+                        tier_variants.append(v)
+        tier_variants.sort(
+            key=lambda c: c.scores.get("composite_score", max(c.scores.values()) if c.scores else 0),
+            reverse=True,
+        )
+        # Dedupe by mutation position set
+        seen_pos: set[tuple[int, ...]] = set()
+        deduped: list[ProteinCandidate] = []
+        for v in tier_variants:
+            key = tuple(sorted(m.position for m in v.mutations))
+            if key not in seen_pos:
+                seen_pos.add(key)
+                deduped.append(v)
+        tier_variants = deduped
+
+        # Stage header
+        parts.append(f"""
 <div class="section">
-  <h2>Full Pipeline Breakdown</h2>
-  <p class="subtitle">Each analysis step with its top mutations. Click a step to expand, then "Show more" for the full list.</p>
+  <div class="tier-header">
+    <span class="tier-badge">STAGE {tier_num}</span>
+    <span class="tier-title">{_html.escape(tier_label)}</span>
+  </div>
+  <p class="subtitle" style="margin-top:0.6rem">{_html.escape(tier_desc)}</p>
 """)
 
-    current_tier: int | None = None
+        # Recommended mutations table (skip for Stages 1, 2, 3)
+        if tier_num not in (1, 2, 3):
+            recs = tier_variants[:10]
+            if recs:
+                parts.append(_stage_recs_table(recs, tier_num))
 
-    for step_name, result in results.items():
-        if step_name in _COMBINED_STEPS:
-            continue  # shown in Sequence Liabilities section
-        tier = _TIER_MAP.get(step_name, 0)
-        if tier != current_tier:
-            current_tier = tier
-            tier_label = _TIER_NAMES.get(tier, f"Tier {tier}")
+        # Sequence liabilities for stage 1
+        if tier_num == 1:
+            parts.append(_sequence_liabilities_section(results))
+
+        # Per-step collapsible details
+        for step_name in steps:
+            result = results[step_name]
+            variants = step_mutations.get(step_name, [])
+            # Skip steps already shown in liabilities, and sequence_complexity
+            if step_name in ("cysteine_scan", "motif_scan", "sequence_complexity") and tier_num == 1:
+                continue
+            # Skip find_homologs and consensus_design in Stage 2
+            if step_name in ("find_homologs", "consensus_design") and tier_num == 2:
+                continue
+            # Skip predict_structure in Stage 3 (passes through prior variants unchanged)
+            if step_name == "predict_structure" and tier_num == 3:
+                continue
+            total = len(variants)
+            n_warnings = len(result.warnings)
+            warn_badge = f' &middot; <span class="warn">{n_warnings} warnings</span>' if n_warnings else ""
+            score_keys = _best_score_keys(variants)
+            score_hdrs = "".join(f"<th>{_html.escape(k)}</th>" for k in score_keys)
+            uid = step_name.replace(" ", "_")
+
             parts.append(f"""
-<div class="tier-header">
-  <span class="tier-badge">TIER {tier}</span>
-  <span class="tier-title">{_html.escape(tier_label)}</span>
-</div>""")
-
-        variants = step_mutations.get(step_name, [])
-        total = len(variants)
-        n_warnings = len(result.warnings)
-        warn_badge = f' &middot; <span class="warn">{n_warnings} warnings</span>' if n_warnings else ""
-
-        # Determine the best score key for this step's variants
-        score_keys = _best_score_keys(variants)
-
-        parts.append(f"""
 <details class="step-card">
   <summary>
     {_html.escape(step_name.replace('_', ' ').title())}
@@ -919,65 +1163,54 @@ def _pipeline_breakdown(
   </summary>
   <div class="inner">
 """)
+            if not variants:
+                if result.warnings:
+                    for w in result.warnings[:5]:
+                        parts.append(f'<p class="warn" style="font-size:0.85rem">\u26a0 {_html.escape(w)}</p>')
+                else:
+                    parts.append('<p class="muted">No variant mutations produced by this step.</p>')
+                parts.append("</div></details>")
+                continue
 
-        if not variants:
-            # Show warnings or info
-            if result.warnings:
-                for w in result.warnings[:5]:
-                    parts.append(f'<p class="warn" style="font-size:0.85rem">⚠ {_html.escape(w)}</p>')
-            else:
-                parts.append('<p class="muted">No variant mutations produced by this step.</p>')
-            parts.append("</div></details>")
-            continue
+            parts.append(f'<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Variant</th><th>Mutations</th>{score_hdrs}</tr></thead>')
+            parts.append(f'<tbody id="tbody-{uid}">')
 
-        # Build table
-        score_hdrs = "".join(f"<th>{_html.escape(k)}</th>" for k in score_keys)
-        uid = step_name.replace(" ", "_")
+            for idx, v in enumerate(variants[:100], 1):
+                muts = ", ".join(m.label for m in v.mutations) or "\u2014"
+                score_cells = "".join(
+                    f"<td>{_fmt_score(v.scores[k])}</td>" if k in v.scores else "<td class='muted'>\u2014</td>"
+                    for k in score_keys
+                )
+                hidden_cls = ""
+                if idx > 20:
+                    hidden_cls = f' class="extra-row-{uid}" style="display:none"'
+                parts.append(
+                    f"<tr{hidden_cls}><td>{idx}</td><td>{_html.escape(v.name)}</td>"
+                    f'<td class="mono">{_html.escape(muts)}</td>{score_cells}</tr>'
+                )
 
-        parts.append(f"""
-    <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>#</th><th>Variant</th><th>Mutations</th>{score_hdrs}</tr></thead>
-      <tbody id="tbody-{uid}">
-""")
+            parts.append("</tbody></table></div>")
 
-        for idx, v in enumerate(variants[:100], 1):
-            muts = ", ".join(m.label for m in v.mutations) or "—"
-            score_cells = "".join(
-                f"<td>{_fmt_score(v.scores[k])}</td>" if k in v.scores else "<td class='muted'>—</td>"
-                for k in score_keys
-            )
-            hidden_cls = ""
-            if idx > 20:
-                hidden_cls = f' class="extra-row-{uid}" style="display:none"'
-            parts.append(
-                f"<tr{hidden_cls}><td>{idx}</td><td>{_html.escape(v.name)}</td>"
-                f'<td class="mono">{_html.escape(muts)}</td>{score_cells}</tr>'
-            )
-
-        parts.append("</tbody></table></div>")
-
-        if total > 20:
-            showing_extra = min(total, 100) - 20
-            parts.append(f"""
+            if total > 20:
+                showing_extra = min(total, 100) - 20
+                parts.append(f"""
     <button class="show-more-btn" onclick="toggleRows('{uid}', this)" data-expanded="false">
       Show {showing_extra} more ({total} total)
-    </button>
-""")
+    </button>""")
 
-        # Warnings
-        if result.warnings:
-            parts.append('<div style="margin-top:0.6rem">')
-            for w in result.warnings[:5]:
-                parts.append(f'<p class="warn" style="font-size:0.82rem">⚠ {_html.escape(w)}</p>')
-            parts.append('</div>')
+            if result.warnings:
+                parts.append('<div style="margin-top:0.6rem">')
+                for w in result.warnings[:5]:
+                    parts.append(f'<p class="warn" style="font-size:0.82rem">\u26a0 {_html.escape(w)}</p>')
+                parts.append("</div>")
 
-        parts.append("</div></details>")
+            parts.append("</div></details>")
 
+        parts.append("</div><!-- /section -->")
+
+    # Toggle‑rows script
     parts.append("""
-</div><!-- /section -->
 </div><!-- /content -->
-
 <script>
 function toggleRows(uid, btn) {
   var rows = document.querySelectorAll('.extra-row-' + uid);
@@ -990,6 +1223,60 @@ function toggleRows(uid, btn) {
 """)
 
     return "\n".join(parts)
+
+
+def _stage_recs_table(recs: list[ProteinCandidate], tier_num: int) -> str:
+    """Render a recommended-mutations table for a single stage."""
+    rows: list[str] = []
+    for i, v in enumerate(recs, 1):
+        badge_cls = {1: "gold", 2: "silver", 3: "bronze"}.get(i, "")
+        mut_strs = ", ".join(m.label for m in v.mutations) or "\u2014"
+        source = v.mutations[0].source_step.replace("_", " ").title() if v.mutations else "\u2014"
+
+        # Pick best available score
+        comp = v.scores.get("composite_score", 0)
+        best_key = "composite_score"
+        if not comp:
+            for k, val in v.scores.items():
+                if k not in ("n_mutations",):
+                    comp = val
+                    best_key = k
+                    break
+
+        comp_css = "good" if comp > 0 else "bad" if comp < 0 else ""
+
+        # Detail scores
+        score_parts = []
+        for key in ("esm1v_delta", "consensus_conservation", "pssm_log_odds",
+                     "disulfide_cb_distance", "cavity_burial", "surface_sap",
+                     "cys_risk", "motif_risk", "combo_mean"):
+            if key in v.scores:
+                short = key.replace("_", " ").split()[0]
+                score_parts.append(f"{short}={_fmt_score(v.scores[key])}")
+
+        rows.append(f"""<tr>
+  <td><span class="rank {badge_cls}">{i}</span></td>
+  <td><strong>{_html.escape(v.name)}</strong></td>
+  <td class="mono">{_html.escape(mut_strs)}</td>
+  <td>{_html.escape(source)}</td>
+  <td class="{comp_css}">{comp:+.4f}</td>
+  <td class="muted" style="font-size:0.78rem">{'; '.join(score_parts) if score_parts else '\u2014'}</td>
+</tr>""")
+
+    return f"""
+  <h3 style="color:var(--accent);margin:0.8rem 0 0.3rem">Recommended Mutations</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr>
+      <th>#</th><th>Variant</th><th>Mutations</th>
+      <th>Source Step</th><th>Score</th><th>Details</th>
+    </tr></thead>
+    <tbody>
+      {''.join(rows)}
+    </tbody>
+  </table>
+  </div>
+"""
 
 
 def _best_score_keys(variants: list[ProteinCandidate], max_keys: int = 5) -> list[str]:
