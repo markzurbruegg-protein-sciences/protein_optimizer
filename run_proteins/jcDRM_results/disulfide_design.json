@@ -1,14 +1,14 @@
 {
   "step_name": "disulfide_design",
-  "timestamp": "2026-03-09T13:21:41.440068+00:00",
+  "timestamp": "2026-03-09T23:11:19.177106+00:00",
   "config_used": {
     "cb_distance_min": 3.5,
     "cb_distance_max": 4.5,
-    "max_candidates": 10,
+    "max_candidates": 15,
     "_global": {
       "protected_residues": [],
       "expression_host": "ecoli",
-      "output_dir": "./run_proteins/jcDRM_results"
+      "output_dir": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results"
     }
   },
   "warnings": [],
@@ -17,16 +17,16 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM",
-      "candidate_id": "73ab8a2158da",
+      "candidate_id": "e8a10dd8d5a2",
       "parent_id": null,
-      "structure_path": "run_proteins/jcDRM_results/structures/jcDRM.pdb",
+      "structure_path": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/structures/jcDRM.pdb",
       "mutations": [],
       "scores": {
         "motif_risk_total": 7.8999999999999995,
         "motif_count": 15,
         "complexity_issues": 2,
         "complexity_risk_total": 0.6,
-        "plddt": 94.13759784560145
+        "plddt": 94.13759784560132
       },
       "metadata": {
         "motif_hits": [
@@ -169,8 +169,8 @@
             "description": "High charge density (7/10 charged): may cause solubility issues or non-specific interactions"
           }
         ],
-        "homologs_fasta": "run_proteins/jcDRM_results/jcDRM_homologs.fasta",
-        "msa_fasta": "run_proteins/jcDRM_results/jcDRM_msa.fasta",
+        "homologs_fasta": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/jcDRM_homologs.fasta",
+        "msa_fasta": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/jcDRM_msa.fasta",
         "num_homologs": 500,
         "homolog_sequences": [
           "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
@@ -7932,8 +7932,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEACVGPPYFYYENVALAPRGVWQTISRFLCDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_A29C+Y56C",
-      "candidate_id": "a471800b02f7",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "d0d5678608ce",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -7974,8 +7974,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVCYHLSVLKDMFPGGINVLSLFSGIGGAEVCLHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_A212C+A241C",
-      "candidate_id": "51e0a95880c9",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "9b95061b684b",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8016,8 +8016,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKACEDYEGDPPLTVQKFVLDECRKWNLVWVGRCKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_L137C+N167C",
-      "candidate_id": "08dadf8a70ed",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "594a1e39e0da",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8058,8 +8058,8 @@
     {
       "sequence": "MLRLPNPMVGFCVPNEPCIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_G12C+A18C",
-      "candidate_id": "1b04134af088",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "a16a59316db5",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8100,8 +8100,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCCGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVACLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_V124C+P171C",
-      "candidate_id": "fe0a019cd1f9",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "831b3ae52153",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8142,8 +8142,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCACLAGSNRHHRDGLEGKECSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_N313C+S330C",
-      "candidate_id": "0d469055e9be",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "f10f9a133bc8",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8184,8 +8184,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDCKYFCAAACKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_S65C+R73C",
-      "candidate_id": "9cd61e5cf4fd",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "a507d903e4b0",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8226,8 +8226,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPCYTIHCALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_P94C+E99C",
-      "candidate_id": "0ce274fb6972",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "deacd47a1764",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8268,8 +8268,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALCPRGCWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_A43C+V47C",
-      "candidate_id": "0eca53fe7e27",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "03905f321656",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8310,8 +8310,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPCYTIHECLPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_P94C+A100C",
-      "candidate_id": "f2950a8f1f3e",
-      "parent_id": "73ab8a2158da",
+      "candidate_id": "944386ac73cd",
+      "parent_id": "e8a10dd8d5a2",
       "structure_path": null,
       "mutations": [
         {
@@ -8346,6 +8346,216 @@
         "disulfide_pair": [
           94,
           100
+        ]
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGCINVLSLFSGIGGAEVALHRLGICLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_G225C+R248C",
+      "candidate_id": "42b5b36daaf3",
+      "parent_id": "e8a10dd8d5a2",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 225,
+          "wt": "G",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 248,
+            "cb_distance": 3.9019764953488925
+          }
+        },
+        {
+          "position": 248,
+          "wt": "R",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 225,
+            "cb_distance": 3.9019764953488925
+          }
+        }
+      ],
+      "scores": {
+        "disulfide_cb_distance": 3.9019764953488925,
+        "disulfide_energy_estimate": -1.4901175232555368
+      },
+      "metadata": {
+        "derived_from": "jcDRM",
+        "disulfide_pair": [
+          225,
+          248
+        ]
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCACLAGSNRHHRDGLECKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_N313C+G327C",
+      "candidate_id": "b9acdb990c84",
+      "parent_id": "e8a10dd8d5a2",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 313,
+          "wt": "N",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 327,
+            "cb_distance": 3.961865043807854
+          }
+        },
+        {
+          "position": 327,
+          "wt": "G",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 313,
+            "cb_distance": 3.961865043807854
+          }
+        }
+      ],
+      "scores": {
+        "disulfide_cb_distance": 3.961865043807854,
+        "disulfide_energy_estimate": -1.190674780960728
+      },
+      "metadata": {
+        "derived_from": "jcDRM",
+        "disulfide_pair": [
+          313,
+          327
+        ]
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDCPLTCQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_P144C+V148C",
+      "candidate_id": "ff2402d89483",
+      "parent_id": "e8a10dd8d5a2",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 144,
+          "wt": "P",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 148,
+            "cb_distance": 3.9705550130954474
+          }
+        },
+        {
+          "position": 148,
+          "wt": "V",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 144,
+            "cb_distance": 3.9705550130954474
+          }
+        }
+      ],
+      "scores": {
+        "disulfide_cb_distance": 3.9705550130954474,
+        "disulfide_energy_estimate": -1.1472249345227619
+      },
+      "metadata": {
+        "derived_from": "jcDRM",
+        "disulfide_pair": [
+          144,
+          148
+        ]
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGCPRNCTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_F183C+H187C",
+      "candidate_id": "8be3634b4963",
+      "parent_id": "e8a10dd8d5a2",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 183,
+          "wt": "F",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 187,
+            "cb_distance": 3.9880260344055665
+          }
+        },
+        {
+          "position": 187,
+          "wt": "H",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 183,
+            "cb_distance": 3.9880260344055665
+          }
+        }
+      ],
+      "scores": {
+        "disulfide_cb_distance": 3.9880260344055665,
+        "disulfide_energy_estimate": -1.0598698279721668
+      },
+      "metadata": {
+        "derived_from": "jcDRM",
+        "disulfide_pair": [
+          183,
+          187
+        ]
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLCFPRNHTRGGGLSRTDRYKSLGASFQCDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_G182C+V208C",
+      "candidate_id": "969f499c9926",
+      "parent_id": "e8a10dd8d5a2",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 182,
+          "wt": "G",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 208,
+            "cb_distance": 3.99328393837288
+          }
+        },
+        {
+          "position": 208,
+          "wt": "V",
+          "mut": "C",
+          "source_step": "disulfide_design",
+          "score": null,
+          "metadata": {
+            "disulfide_partner": 182,
+            "cb_distance": 3.99328393837288
+          }
+        }
+      ],
+      "scores": {
+        "disulfide_cb_distance": 3.99328393837288,
+        "disulfide_energy_estimate": -1.033580308135598
+      },
+      "metadata": {
+        "derived_from": "jcDRM",
+        "disulfide_pair": [
+          182,
+          208
         ]
       }
     }

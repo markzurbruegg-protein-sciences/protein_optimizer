@@ -29,11 +29,19 @@ console = Console()
 
 def _setup_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
-    )
+    ))
+    # Force stdout and flush after every log line
+    root = logging.getLogger()
+    root.setLevel(level)
+    root.addHandler(handler)
+    # Make stdout unbuffered for nohup/redirect
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
 
 
 @click.group()
@@ -47,19 +55,48 @@ def main(verbose: bool) -> None:
 
 
 @main.command()
+@click.argument("input_fasta", type=click.Path(exists=True))
+@click.option("-o", "--output", "output_report", type=click.Path(), default=None,
+              help="Output HTML report path (default: <name>_report.html next to FASTA).")
 @click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
-              help="Path to pipeline YAML config.")
-@click.option("-i", "--input", "input_path", type=click.Path(exists=True), required=True,
-              help="Input FASTA or StepResult JSON.")
-@click.option("-o", "--output", "output_dir", type=click.Path(), default="./results",
-              help="Output directory.")
-def run(config_path: str | None, input_path: str, output_dir: str) -> None:
-    """Run the full optimization pipeline."""
+              help="Pipeline YAML config (default: configs/full_pipeline.yaml).")
+def run(input_fasta: str, output_report: str | None, config_path: str | None) -> None:
+    """Run the full optimization pipeline.
+
+    \b
+    Usage:  protopt run proteins/my_protein.fasta
+            protopt run proteins/my_protein.fasta -o my_report.html
+            protopt run proteins/my_protein.fasta -c configs/custom.yaml
+    """
+    fasta_path = Path(input_fasta).resolve()
+    protein_name = fasta_path.stem
+
+    # Resolve output dir: <fasta_dir>/<name>_results/
+    output_dir = fasta_path.parent / f"{protein_name}_results"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Resolve report path
+    if output_report is None:
+        output_report = str(fasta_path.parent / f"{protein_name}_report.html")
+
+    # Default config
+    if config_path is None:
+        pkg_root = Path(__file__).resolve().parents[2]
+        default_cfg = pkg_root / "configs" / "full_pipeline.yaml"
+        if default_cfg.exists():
+            config_path = str(default_cfg)
+
     config = load_config(config_path)
+
+    # Override output_dir in config to match our resolved path
+    config.setdefault("global", {})["output_dir"] = str(output_dir)
+
     pipeline = Pipeline(config)
-    result = pipeline.run(input_path, output_dir)
+    result = pipeline.run(str(fasta_path), str(output_dir))
+
     console.print(f"\n[bold green]✓ Pipeline complete.[/] {len(result.candidates)} candidates.")
-    console.print(f"  Results saved to: {output_dir}/")
+    console.print(f"  Results: {output_dir}/")
+    console.print(f"  Report:  {output_report}")
 
 
 # ── List steps ───────────────────────────────────────────────────────────

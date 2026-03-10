@@ -1,0 +1,5 @@
+[2026-03-09 23:01:09,085][rf_diffusion.config.config_format][INFO] - Translating obsolete key: extra_t1d -> ['extra_tXd']
+[2026-03-09 23:01:09,086][rf_diffusion.config.config_format][INFO] - Translating obsolete key: extra_t1d_params -> ['extra_tXd_params']
+[2026-03-09 23:01:25,805][__main__][INFO] - Making design 0 of 0:1: run_proteins/jcDRM_results/structures/jcDRM_rfdiff_test_0
+[2026-03-09 23:01:26,894][se3_flow_matching.data.so3_utils][INFO] - Data loaded from .cache/cache_igso3_s0.100-1.500-1000_l1000_o1000-3.npz
+[2026-03-09 23:01:27,124][__main__][INFO] - Flow-matching step: 1/10

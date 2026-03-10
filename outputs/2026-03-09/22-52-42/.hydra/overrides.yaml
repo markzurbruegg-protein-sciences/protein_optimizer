@@ -1,0 +1,6 @@
+- inference.input_pdb=run_proteins/jcDRM_results/structures/jcDRM.pdb
+- inference.output_prefix=run_proteins/jcDRM_results/structures/jcDRM_rfdiff_test
+- inference.num_designs=1
+- diffuser.partial_T=10
+- diffuser.T=50
+- contigmap.contigs=[A1-350]

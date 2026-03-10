@@ -1,10 +1,13 @@
-"""v2 HTML report — 3D structure viewer, protein metrics, ranked mutations.
+"""v2 HTML report — redesigned with clear, hierarchical layout.
 
 Generates a self-contained HTML report with:
-- Interactive 3Dmol.js viewer (PDB embedded inline)
-- Protein biophysical metrics panel
-- Top-10 mutation summary
-- Per-step pipeline breakdown (top 20, expandable to 100)
+- Top bar: protein name, length, date
+- Hero: Interactive 3Dmol.js viewer + biophysical metrics sidebar
+- Executive Summary: key stats cards (candidates, E1 range, top pick, stages)
+- Top Recommendations: single unified table, top 20 by composite score
+- Pipeline Analysis: concise stage cards, top 5 per stage
+- Sequence Liabilities: combined cysteine + motif table
+- Full Variant Library: searchable, expandable table (single source of truth)
 """
 
 from __future__ import annotations
@@ -100,11 +103,25 @@ def generate_report_v2(
     # Per-tier mutation data for 3D viewer
     tier_mut_data = _collect_tier_viewer_data(step_mutations)
 
-    # Build HTML
+    # Build HTML with new architecture:
+    # 1. Header (CSS/meta)
+    # 2. Hero (top bar + 3D viewer + metrics sidebar)
+    # 3. Executive Summary (key stats cards)
+    # 4. Top Recommendations (unified top-20 table)
+    # 5. Pipeline Analysis (concise stage cards, top 5 per stage)
+    # 6. Sequence Liabilities (combined cysteine + motif table)
+    # 7. Full Variant Library (expandable at bottom)
+    # 8. Footer
     parts = [
         _header_html(title),
         _hero_section(parent, metrics, pdb_text, highlight_positions, variants_ranked, tier_mut_data),
-        _stage_sections(step_mutations, results),
+        '<div class="content">',
+        _executive_summary_section(results, variants_ranked, metrics),
+        _top_recommendations_section(variants_ranked),
+        _pipeline_analysis_section(step_mutations, results),
+        _sequence_liabilities_standalone(results),
+        _full_variant_library_section(variants_ranked),
+        '</div><!-- /content -->',
         _footer_html(),
     ]
 
@@ -341,17 +358,19 @@ _TIER_MAP: dict[str, int] = {
     "find_homologs": 2, "consensus_design": 2, "pssm_analysis": 2,
     "predict_structure": 3, "disulfide_design": 3, "cavity_fill": 3,
     "surface_patch": 3, "stability_ddg": 3,
-    "esm1v_score": 4, "e1_score": 4, "proteinmpnn_design": 4,
-    "esmif1_score": 4, "combine_variants": 4,
-    "rfdiffusion_diversify": 5, "design_validate": 5, "motif_scaffold": 5,
+    "rfdiffusion_diversify": 4, "proteinmpnn_design": 4,
+    "design_validate": 4, "combine_variants": 4,
+    "esm1v_score": 5, "e1_score": 5, "esmif1_score": 5,
+    "motif_scaffold": 6,
 }
 
 _TIER_NAMES = {
     1: "Sequence Heuristics",
     2: "Evolutionary Analysis",
     3: "Structure-based Engineering",
-    4: "AI / ML Scoring",
-    5: "Generative Design",
+    4: "Design & Combination",
+    5: "PLM Scoring",
+    6: "Generative Design",
 }
 
 
@@ -570,6 +589,114 @@ tr:hover {{ background: var(--hover); }}
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
   margin-right: 3px; vertical-align: middle;
 }}
+
+/* ── Step summary stats ── */
+.summary-stats {{
+  display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 0.8rem;
+}}
+.stat-chip {{
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.75rem; border-radius: 6px;
+  background: rgba(88,166,255,0.08); border: 1px solid var(--border);
+  font-size: 0.8rem; color: var(--fg);
+}}
+.stat-chip strong {{ color: var(--accent); font-variant-numeric: tabular-nums; }}
+.stat-chip.good strong {{ color: var(--green); }}
+.stat-chip.warn strong {{ color: var(--yellow); }}
+.stat-chip.bad strong {{ color: var(--red); }}
+
+/* ── Step status icon ── */
+.step-status {{
+  font-size: 0.85rem; margin-right: 0.15rem;
+}}
+
+/* ── Executive summary cards ── */
+.exec-summary {{
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem; margin-bottom: 2rem;
+}}
+.exec-card {{
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.3rem;
+}}
+.exec-card .ec-label {{
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: #8b949e;
+}}
+.exec-card .ec-value {{
+  font-size: 1.7rem; font-weight: 700; color: var(--accent);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}}
+.exec-card .ec-sub {{
+  font-size: 0.78rem; color: #8b949e;
+}}
+.exec-card.highlight {{ border-color: var(--accent); }}
+.exec-card.good-card {{ border-color: var(--green); }}
+.exec-card.good-card .ec-value {{ color: var(--green); }}
+
+/* ── Top recommendations section ── */
+.recs-table td.rank-cell {{ width: 42px; text-align: center; }}
+.score-badge {{
+  display: inline-block; padding: 1px 8px; border-radius: 4px;
+  font-size: 0.78rem; font-weight: 700;
+}}
+.score-badge.good {{ background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid var(--green); }}
+.score-badge.bad {{ background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid var(--red); }}
+.score-badge.neutral {{ background: rgba(88,166,255,0.1); color: var(--accent); border: 1px solid var(--accent); }}
+
+/* ── Pipeline analysis ── */
+.pipeline-grid {{
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem; margin-top: 1rem;
+}}
+.pipeline-card {{
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden;
+}}
+.pipeline-card .pc-header {{
+  padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}}
+.pipeline-card .pc-header .stage-num {{
+  font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+  background: var(--accent); color: #000; white-space: nowrap;
+}}
+.pipeline-card .pc-header .pc-title {{
+  font-size: 0.9rem; font-weight: 600; flex: 1;
+}}
+.pipeline-card .pc-header .pc-count {{
+  font-size: 0.72rem; color: #8b949e;
+}}
+.pipeline-card .pc-desc {{
+  padding: 0.5rem 1rem; font-size: 0.8rem; color: #8b949e; border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}}
+.pipeline-card .pc-chips {{
+  padding: 0.6rem 1rem; display: flex; flex-wrap: wrap; gap: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}}
+.pipeline-card .pc-top5 {{ padding: 0 1rem 0.75rem; }}
+.pipeline-card .pc-top5 table {{ font-size: 0.8rem; }}
+.pipeline-card .pc-top5 table td {{ padding: 0.3rem 0.4rem; }}
+
+/* ── Sequence liabilities standalone ── */
+.liabilities-section {{ margin-bottom: 2.5rem; }}
+
+/* ── Full variant library ── */
+.lib-controls {{
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;
+}}
+.lib-search {{
+  flex: 1; min-width: 200px; padding: 0.4rem 0.75rem;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--fg); font-size: 0.85rem; font-family: inherit;
+}}
+.lib-search:focus {{ outline: none; border-color: var(--accent); }}
+.lib-toggle {{
+  padding: 0.35rem 1rem; background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--accent); cursor: pointer; font-size: 0.82rem;
+  font-family: inherit;
+}}
+.lib-toggle:hover {{ background: var(--border); }}
 </style>
 </head>
 <body>
@@ -1017,7 +1144,6 @@ def _sequence_liabilities_section(results: dict[str, StepResult]) -> str:
     n_motif = len(rows) - n_cys
 
     return f"""
-  <h3 style="color:var(--accent);margin:1rem 0 0.3rem">Sequence Liabilities</h3>
   <p class="subtitle">
     <strong>Unpaired cysteines</strong> may form non-native disulfides,
     <strong>deamidation</strong> sites undergo backbone rearrangements,
@@ -1039,7 +1165,7 @@ def _sequence_liabilities_section(results: dict[str, StepResult]) -> str:
 
 _STAGE_DESCRIPTIONS: dict[int, str] = {
     1: (
-        "Quick sequence-level scans that flag chemical liabilities — unpaired cysteines, "
+        "Quick sequence-level scans that flag chemical liabilities \u2014 unpaired cysteines, "
         "deamidation/oxidation motifs, proteolytic sites, and low-complexity regions. "
         "These are fast to compute and catch issues that affect shelf-life and manufacturability."
     ),
@@ -1050,18 +1176,546 @@ _STAGE_DESCRIPTIONS: dict[int, str] = {
     ),
     3: (
         "Structure-aware engineering using the Boltz-2 predicted 3D model. "
-        "Includes disulfide design, cavity filling, and surface hydrophobic patch analysis "
+        "Includes stability prediction (ThermoMPNN \u0394\u0394G), disulfide design, "
+        "cavity filling, and surface hydrophobic patch analysis "
         "to improve thermostability and reduce aggregation."
     ),
     4: (
-        "Deep-learning scores from ESM-1v pseudo-log-likelihoods and combinatorial variant "
-        "assembly. These models capture co-evolutionary patterns not visible to classical methods."
+        "Generative protein design: RFdiffusion2 generates backbone-diversified variants "
+        "via partial diffusion, ProteinMPNN (SolubleMPNN) designs sequences on predicted "
+        "structures, and Boltz-2 validates self-consistency. Combinatorial assembly of top "
+        "point mutations rounds out the variant library."
     ),
     5: (
-        "Generative protein design using RFdiffusion and sequence-design validation. "
-        "Produces novel backbone/sequence variants that may outperform point-mutation approaches."
+        "Zero-shot fitness evaluation with Profluent E1, a 600M-parameter protein language model. "
+        "Wildtype-marginal scoring measures how well each variant fits the learned evolutionary "
+        "landscape, providing an unbiased final evaluation of all candidates."
     ),
 }
+
+
+def _step_summary_card(step_name: str, result: StepResult) -> str:
+    """Generate a summary info card for a step showing key stats."""
+    parts: list[str] = []
+
+    if step_name == "find_homologs":
+        parent = next((c for c in result.candidates if c.parent_id is None), None)
+        if parent:
+            meta = parent.metadata
+            n_homologs = meta.get("n_homologs", 0)
+            method = meta.get("search_method", "unknown")
+            homolog_seqs = meta.get("homolog_sequences", [])
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip"><strong>{n_homologs}</strong> homologs found</div>')
+            parts.append(f'<div class="stat-chip">Method: <strong>{_html.escape(str(method))}</strong></div>')
+            if homolog_seqs:
+                avg_len = sum(len(s) for s in homolog_seqs) / len(homolog_seqs)
+                parts.append(f'<div class="stat-chip">Avg length: <strong>{avg_len:.0f}</strong> aa</div>')
+            parts.append('</div>')
+
+    elif step_name == "consensus_design":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        if variants:
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> consensus mutations</div>')
+            scores = [c.scores.get("consensus_conservation", 0) for c in variants if "consensus_conservation" in c.scores]
+            if scores:
+                parts.append(f'<div class="stat-chip">Conservation: <strong>{min(scores):.2f}</strong> \u2013 <strong>{max(scores):.2f}</strong></div>')
+            parts.append('</div>')
+
+    elif step_name == "predict_structure":
+        parent = next((c for c in result.candidates if c.parent_id is None), None)
+        if parent:
+            plddt = parent.scores.get("plddt", 0)
+            method = parent.metadata.get("method", "boltz2")
+            pdb_path = parent.metadata.get("structure_path", "")
+            css = "good" if plddt >= 80 else "warn" if plddt >= 60 else "bad"
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip">Method: <strong>{_html.escape(str(method))}</strong></div>')
+            parts.append(f'<div class="stat-chip {css}">Mean pLDDT: <strong>{plddt:.1f}</strong></div>')
+            if pdb_path:
+                parts.append(f'<div class="stat-chip">Structure generated \u2714</div>')
+            parts.append('</div>')
+
+    elif step_name == "stability_ddg":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        if variants:
+            ddgs = [c.scores.get("ddg", 0) for c in variants if "ddg" in c.scores]
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> stabilizing mutations</div>')
+            if ddgs:
+                parts.append(f'<div class="stat-chip">\u0394\u0394G range: <strong>{min(ddgs):.2f}</strong> to <strong>{max(ddgs):.2f}</strong> kcal/mol</div>')
+            parts.append('</div>')
+
+    elif step_name == "disulfide_design":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        if variants:
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> disulfide candidates</div>')
+            dists = [c.scores.get("disulfide_cb_distance", 0) for c in variants if "disulfide_cb_distance" in c.scores]
+            if dists:
+                parts.append(f'<div class="stat-chip">C\u03b2 distance: <strong>{min(dists):.2f}</strong> \u2013 <strong>{max(dists):.2f}</strong> \u00c5</div>')
+            parts.append('</div>')
+
+    elif step_name == "pssm_analysis":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        if variants:
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> PSSM-positive mutations</div>')
+            lo = [c.scores.get("pssm_log_odds", 0) for c in variants if "pssm_log_odds" in c.scores]
+            if lo:
+                parts.append(f'<div class="stat-chip">Log-odds range: <strong>{min(lo):.2f}</strong> to <strong>{max(lo):.2f}</strong></div>')
+            parts.append('</div>')
+
+    elif step_name == "sequence_complexity":
+        parent = next((c for c in result.candidates if c.parent_id is None), None)
+        if parent:
+            issues = int(parent.scores.get("complexity_issues", 0))
+            risk = parent.scores.get("complexity_risk_total", 0)
+            css = "good" if issues == 0 else "warn" if issues < 3 else "bad"
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip {css}"><strong>{issues}</strong> complexity issues</div>')
+            parts.append(f'<div class="stat-chip">Risk score: <strong>{risk:.2f}</strong></div>')
+            parts.append('</div>')
+
+    elif step_name == "cavity_fill":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        if variants:
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> cavity-filling mutations</div>')
+            parts.append('</div>')
+
+    elif step_name == "surface_patch":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        if variants:
+            parts.append(f'<div class="summary-stats">')
+            parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> surface redesign mutations</div>')
+            sap = [c.scores.get("surface_sap", 0) for c in variants if "surface_sap" in c.scores]
+            if sap:
+                parts.append(f'<div class="stat-chip">SAP score: <strong>{min(sap):.2f}</strong> to <strong>{max(sap):.2f}</strong></div>')
+            parts.append('</div>')
+
+    elif step_name == "rfdiffusion_diversify":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        parts.append(f'<div class="summary-stats">')
+        parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> RFdiffusion backbones</div>')
+        parts.append('</div>')
+
+    elif step_name == "proteinmpnn_design":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        if variants:
+            parts.append(f'<div class="summary-stats">')
+            n_designs = sum(1 for c in variants if "mpnn_score" in c.scores)
+            parts.append(f'<div class="stat-chip"><strong>{n_designs}</strong> MPNN designs</div>')
+            n_muts = sum(len(c.mutations) for c in variants if "mpnn_score" in c.scores)
+            parts.append(f'<div class="stat-chip"><strong>{n_muts}</strong> total mutations</div>')
+            scores = [c.scores.get("mpnn_score", 0) for c in variants if "mpnn_score" in c.scores]
+            if scores:
+                parts.append(f'<div class="stat-chip">MPNN score: <strong>{min(scores):.3f}</strong> \u2013 <strong>{max(scores):.3f}</strong></div>')
+            parts.append('</div>')
+
+    elif step_name == "combine_variants":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        n_combo = sum(1 for c in variants if "combo_mean" in c.scores)
+        parts.append(f'<div class="summary-stats">')
+        parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> total variants</div>')
+        if n_combo:
+            parts.append(f'<div class="stat-chip"><strong>{n_combo}</strong> combinatorial</div>')
+        parts.append('</div>')
+
+    elif step_name == "design_validate":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        parts.append(f'<div class="summary-stats">')
+        parts.append(f'<div class="stat-chip"><strong>{len(variants)}</strong> validated designs</div>')
+        parts.append('</div>')
+
+    elif step_name == "e1_score":
+        variants = [c for c in result.candidates if c.parent_id is not None]
+        scored = [c for c in variants if "e1_fitness" in c.scores]
+        parts.append(f'<div class="summary-stats">')
+        parts.append(f'<div class="stat-chip"><strong>{len(scored)}</strong> / <strong>{len(variants)}</strong> scored</div>')
+        e1_scores = [c.scores["e1_fitness"] for c in scored]
+        if e1_scores:
+            parts.append(f'<div class="stat-chip">E1 fitness: <strong>{min(e1_scores):.3f}</strong> to <strong>{max(e1_scores):.3f}</strong></div>')
+            pos_count = sum(1 for s in e1_scores if s > 0)
+            parts.append(f'<div class="stat-chip"><strong>{pos_count}</strong> predicted beneficial</div>')
+        parts.append('</div>')
+
+    if result.warnings:
+        for w in result.warnings[:3]:
+            parts.append(f'<p class="warn" style="font-size:0.82rem;margin:0.25rem 0">\u26a0 {_html.escape(w)}</p>')
+
+    return "\n".join(parts)
+
+
+def _executive_summary_section(
+    results: dict[str, StepResult],
+    variants_ranked: list[ProteinCandidate],
+    metrics: dict[str, Any],
+) -> str:
+    """Build the executive summary bar with key stat cards."""
+    total_candidates = len(variants_ranked)
+    n_stages = len([s for s in results if s != "input"])
+
+    # E1 fitness range
+    e1_scores = [c.scores["e1_fitness"] for c in variants_ranked if "e1_fitness" in c.scores]
+    if e1_scores:
+        e1_min, e1_max = min(e1_scores), max(e1_scores)
+        e1_range = f"{e1_min:+.3f} → {e1_max:+.3f}"
+        e1_sub = f"{sum(1 for s in e1_scores if s > 0)} predicted beneficial"
+    else:
+        e1_range = "N/A"
+        e1_sub = "No E1 scores available"
+
+    # Top pick
+    top = variants_ranked[0] if variants_ranked else None
+    if top:
+        top_name = top.name
+        top_score = top.scores.get("composite_score", max(top.scores.values()) if top.scores else 0)
+        top_muts = ", ".join(m.label for m in top.mutations) if top.mutations else "—"
+        top_sub = _html.escape(top_muts[:60] + ("…" if len(top_muts) > 60 else ""))
+        top_score_str = f"{top_score:+.4f}"
+        top_css = "good-card" if top_score > 0 else ""
+    else:
+        top_name = "—"
+        top_score_str = "N/A"
+        top_sub = "No candidates"
+        top_css = ""
+
+    protein_len = metrics.get("length", 0)
+
+    return f"""
+<div class="section">
+  <h2>Executive Summary</h2>
+  <div class="exec-summary">
+    <div class="exec-card">
+      <div class="ec-label">Total Candidates</div>
+      <div class="ec-value">{total_candidates}</div>
+      <div class="ec-sub">variants generated across all stages</div>
+    </div>
+    <div class="exec-card">
+      <div class="ec-label">E1 Fitness Range</div>
+      <div class="ec-value" style="font-size:1.1rem;padding-top:0.4rem">{_html.escape(e1_range)}</div>
+      <div class="ec-sub">{_html.escape(e1_sub)}</div>
+    </div>
+    <div class="exec-card {_html.escape(top_css)}">
+      <div class="ec-label">Top Pick</div>
+      <div class="ec-value" style="font-size:1.1rem;padding-top:0.3rem">{_html.escape(top_name)}</div>
+      <div class="ec-sub">score {top_score_str} &middot; {top_sub}</div>
+    </div>
+    <div class="exec-card">
+      <div class="ec-label">Pipeline Stages</div>
+      <div class="ec-value">{n_stages}</div>
+      <div class="ec-sub">steps completed &middot; {protein_len} residue protein</div>
+    </div>
+  </div>
+</div>
+"""
+
+
+def _top_recommendations_section(variants_ranked: list[ProteinCandidate]) -> str:
+    """Single unified top-20 table ranked by composite score."""
+    if not variants_ranked:
+        return """
+<div class="section">
+  <h2>Top Recommendations</h2>
+  <p class="subtitle">No variant candidates were generated.</p>
+</div>
+"""
+
+    top20 = variants_ranked[:20]
+
+    # Collect score columns to show (up to 4 most common)
+    skip = {"n_mutations", "combo_sum", "motif_risk_total", "motif_count",
+            "complexity_issues", "complexity_risk_total"}
+    priority_keys = ["composite_score", "e1_fitness", "esm1v_delta", "esmif1_delta", "ddg"]
+    present_priority = [k for k in priority_keys if any(k in v.scores for v in top20)][:4]
+
+    rows: list[str] = []
+    for i, v in enumerate(top20, 1):
+        badge_cls = {1: "gold", 2: "silver", 3: "bronze"}.get(i, "")
+        mut_strs = ", ".join(m.label for m in v.mutations) if v.mutations else "\u2014"
+        source = v.mutations[0].source_step.replace("_", " ").title() if v.mutations else "\u2014"
+
+        comp = v.scores.get("composite_score", max(v.scores.values()) if v.scores else 0)
+        comp_cls = "good" if comp > 0 else "bad" if comp < -0.5 else "warn"
+        comp_badge = f'<span class="score-badge {comp_cls}">{comp:+.4f}</span>'
+
+        score_cells = ""
+        for k in present_priority:
+            if k == "composite_score":
+                continue
+            val = v.scores.get(k)
+            if val is not None:
+                cell_cls = ""
+                if k == "e1_fitness":
+                    cell_cls = "good" if val > 0 else "bad" if val < -0.5 else "warn"
+                elif k == "ddg":
+                    cell_cls = "good" if val < 0 else "bad" if val > 2 else ""
+                score_cells += f'<td class="{cell_cls}">{val:+.4f}</td>'
+            else:
+                score_cells += '<td class="muted">\u2014</td>'
+
+        rows.append(
+            f'<tr>'
+            f'<td class="rank-cell"><span class="rank {badge_cls}">{i}</span></td>'
+            f'<td><strong>{_html.escape(v.name)}</strong></td>'
+            f'<td class="mono" style="font-size:0.8rem">{_html.escape(mut_strs[:80])}{"…" if len(mut_strs) > 80 else ""}</td>'
+            f'<td class="muted" style="font-size:0.8rem">{_html.escape(source)}</td>'
+            f'<td>{comp_badge}</td>'
+            f'{score_cells}'
+            f'</tr>'
+        )
+
+    # Extra column headers (skip composite_score, already shown)
+    extra_headers = "".join(
+        f"<th>{_html.escape(k.replace('_', ' ').title())}</th>"
+        for k in present_priority if k != "composite_score"
+    )
+
+    return f"""
+<div class="section">
+  <h2>Top Recommendations</h2>
+  <p class="subtitle">Top 20 variants ranked by composite score across all pipeline stages.</p>
+  <div class="tbl-wrap">
+  <table class="recs-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Variant</th><th>Mutations</th><th>Source</th>
+        <th>Composite Score</th>{extra_headers}
+      </tr>
+    </thead>
+    <tbody>
+      {''.join(rows)}
+    </tbody>
+  </table>
+  </div>
+</div>
+"""
+
+
+def _pipeline_analysis_section(
+    step_mutations: dict[str, list[ProteinCandidate]],
+    results: dict[str, StepResult],
+) -> str:
+    """Concise pipeline stage cards with key findings and top 5 per stage."""
+
+    # Group steps by tier
+    tier_steps: dict[int, list[str]] = {}
+    for step_name in results:
+        tier = _TIER_MAP.get(step_name, 0)
+        if tier == 0:
+            continue
+        tier_steps.setdefault(tier, []).append(step_name)
+
+    if not tier_steps:
+        return ""
+
+    parts: list[str] = [
+        '<div class="section">',
+        '<h2>Pipeline Analysis</h2>',
+        '<p class="subtitle">Key findings from each optimization stage. Top 5 candidates per stage shown.</p>',
+        '<div class="pipeline-grid">',
+    ]
+
+    for tier_num in sorted(tier_steps):
+        tier_label = _TIER_NAMES.get(tier_num, f"Tier {tier_num}")
+        tier_desc = _STAGE_DESCRIPTIONS.get(tier_num, "")
+        steps = tier_steps[tier_num]
+
+        # Collect top 5 variants across steps in this tier
+        _SCORING_TIERS = {5, 6}
+        tier_step_set = set(steps)
+        tier_variants: list[ProteinCandidate] = []
+        for step in steps:
+            for v in step_mutations.get(step, []):
+                if tier_num in _SCORING_TIERS:
+                    tier_variants.append(v)
+                elif any(m.source_step in tier_step_set for m in v.mutations):
+                    tier_variants.append(v)
+        tier_variants.sort(
+            key=lambda c: c.scores.get("composite_score", max(c.scores.values()) if c.scores else 0),
+            reverse=True,
+        )
+        # Dedupe by mutation position set
+        seen_pos: set[tuple[int, ...]] = set()
+        deduped: list[ProteinCandidate] = []
+        for v in tier_variants:
+            key_t = tuple(sorted(m.position for m in v.mutations))
+            if key_t not in seen_pos:
+                seen_pos.add(key_t)
+                deduped.append(v)
+        top5 = deduped[:5]
+
+        # Total variant count for this tier
+        total_tier = sum(len(step_mutations.get(s, [])) for s in steps)
+        n_steps = len(steps)
+
+        # Build summary chips from all steps in this tier
+        chips_parts: list[str] = []
+        for step_name in steps:
+            result = results[step_name]
+            chips_parts.append(_step_summary_card(step_name, result))
+
+        # Build top-5 mini-table
+        top5_rows = ""
+        if top5:
+            score_k = "composite_score"
+            all_score_keys = [
+                k for k in ("composite_score", "e1_fitness", "ddg", "esm1v_delta")
+                if any(k in v.scores for v in top5)
+            ][:2]
+
+            hdrs = "".join(
+                f"<th>{_html.escape(k.replace('_', ' ').split('_')[0].title())}</th>"
+                for k in all_score_keys
+            )
+            t5_rows = []
+            for idx, v in enumerate(top5, 1):
+                badge_cls = {1: "gold", 2: "silver", 3: "bronze"}.get(idx, "")
+                muts = ", ".join(m.label for m in v.mutations) if v.mutations else "\u2014"
+                score_cells = ""
+                for k in all_score_keys:
+                    val = v.scores.get(k)
+                    if val is not None:
+                        css = "good" if val > 0 else "bad" if val < -0.5 else ""
+                        if k == "ddg":
+                            css = "good" if val < 0 else "bad" if val > 2 else ""
+                        score_cells += f'<td class="{css}">{val:+.4f}</td>'
+                    else:
+                        score_cells += '<td class="muted">\u2014</td>'
+                t5_rows.append(
+                    f'<tr>'
+                    f'<td><span class="rank {badge_cls}">{idx}</span></td>'
+                    f'<td class="mono">{_html.escape(muts[:40])}{"…" if len(muts) > 40 else ""}</td>'
+                    f'{score_cells}'
+                    f'</tr>'
+                )
+            top5_rows = f"""
+<table>
+  <thead><tr><th>#</th><th>Mutations</th>{hdrs}</tr></thead>
+  <tbody>{''.join(t5_rows)}</tbody>
+</table>"""
+
+        # Build warning note if any
+        warn_html = ""
+        all_warnings = []
+        for step_name in steps:
+            for w in results[step_name].warnings[:2]:
+                all_warnings.append(w)
+        if all_warnings:
+            w_items = "".join(f'<span class="stat-chip warn" style="display:block;margin-bottom:0.3rem">\u26a0 {_html.escape(w)}</span>' for w in all_warnings[:3])
+            warn_html = f'<div style="padding:0.6rem 1rem;border-top:1px solid var(--border)">{w_items}</div>'
+
+        parts.append(f"""
+<div class="pipeline-card">
+  <div class="pc-header">
+    <span class="stage-num">STAGE {tier_num}</span>
+    <span class="pc-title">{_html.escape(tier_label)}</span>
+    <span class="pc-count">{n_steps} step{"s" if n_steps != 1 else ""} &middot; {total_tier} variants</span>
+  </div>
+  <div class="pc-desc">{_html.escape(tier_desc[:180])}{"…" if len(tier_desc) > 180 else ""}</div>
+  <div class="pc-chips">
+    {''.join(chips_parts)}
+  </div>
+  {"<div class='pc-top5'>" + top5_rows + "</div>" if top5_rows else ""}
+  {warn_html}
+</div>""")
+
+    parts.append("</div><!-- /pipeline-grid -->")
+    parts.append("</div><!-- /section -->")
+    return "\n".join(parts)
+
+
+def _sequence_liabilities_standalone(results: dict[str, StepResult]) -> str:
+    """Sequence liabilities as a standalone section (cysteine + motif combined)."""
+    inner = _sequence_liabilities_section(results)
+    if not inner:
+        return ""
+    return f"""
+<div class="section liabilities-section">
+  <h2>Sequence Liabilities</h2>
+  {inner}
+</div>
+"""
+
+
+def _full_variant_library_section(variants_ranked: list[ProteinCandidate]) -> str:
+    """Full expandable variant library — single source of truth."""
+    if not variants_ranked:
+        return ""
+
+    # Determine score columns
+    skip = {"n_mutations", "combo_sum", "motif_risk_total", "motif_count",
+            "complexity_issues", "complexity_risk_total"}
+    counts: Counter[str] = Counter()
+    for v in variants_ranked[:200]:
+        for k in v.scores:
+            if k not in skip:
+                counts[k] += 1
+    score_keys = [k for k, _ in counts.most_common(6)]
+
+    score_hdrs = "".join(f"<th>{_html.escape(k.replace('_',' ').title())}</th>" for k in score_keys)
+
+    rows: list[str] = []
+    for i, v in enumerate(variants_ranked, 1):
+        muts = ", ".join(m.label for m in v.mutations) if v.mutations else "\u2014"
+        source = v.mutations[0].source_step.replace("_", " ").title() if v.mutations else "\u2014"
+        score_cells = "".join(
+            f"<td>{_fmt_score(v.scores[k])}</td>" if k in v.scores else "<td class='muted'>\u2014</td>"
+            for k in score_keys
+        )
+        hidden = ' class="lib-row-extra" style="display:none"' if i > 25 else ""
+        rows.append(
+            f"<tr{hidden}><td>{i}</td>"
+            f"<td>{_html.escape(v.name)}</td>"
+            f'<td class="mono" style="font-size:0.79rem">{_html.escape(muts)}</td>'
+            f'<td class="muted" style="font-size:0.79rem">{_html.escape(source)}</td>'
+            f"{score_cells}</tr>"
+        )
+
+    n_hidden = max(0, len(variants_ranked) - 25)
+
+    return f"""
+<div class="section">
+  <h2>Full Variant Library</h2>
+  <p class="subtitle">All {len(variants_ranked)} generated variants ranked by composite score. This is the single source of truth for the complete candidate set.</p>
+  <div class="lib-controls">
+    <input class="lib-search" type="text" placeholder="Filter by name or mutation…"
+      oninput="filterLib(this.value)">
+    {"" if n_hidden == 0 else f'<button class="lib-toggle" id="lib-btn" onclick="toggleLib(this)">Show all {len(variants_ranked)} variants</button>'}
+  </div>
+  <div class="tbl-wrap">
+  <table id="lib-table">
+    <thead>
+      <tr><th>#</th><th>Variant</th><th>Mutations</th><th>Source</th>{score_hdrs}</tr>
+    </thead>
+    <tbody id="lib-tbody">
+      {''.join(rows)}
+    </tbody>
+  </table>
+  </div>
+</div>
+<script>
+(function() {{
+  var libExpanded = false;
+  window.toggleLib = function(btn) {{
+    libExpanded = !libExpanded;
+    document.querySelectorAll('.lib-row-extra').forEach(function(r) {{
+      r.style.display = libExpanded ? '' : 'none';
+    }});
+    btn.textContent = libExpanded ? 'Show fewer' : 'Show all {len(variants_ranked)} variants';
+  }};
+  window.filterLib = function(q) {{
+    q = q.toLowerCase();
+    document.querySelectorAll('#lib-tbody tr').forEach(function(r) {{
+      var txt = r.textContent.toLowerCase();
+      r.style.display = txt.indexOf(q) >= 0 ? '' : 'none';
+    }});
+  }};
+}})();
+</script>
+"""
 
 
 def _stage_sections(
@@ -1085,20 +1739,15 @@ def _stage_sections(
         tier_desc = _STAGE_DESCRIPTIONS.get(tier_num, "")
         steps = tier_steps[tier_num]
 
-        # Collect top mutations from steps in this tier.
-        # Scoring / ranking tiers (e.g. Tier 4: esm1v_score, combine_variants)
-        # don't originate mutations — they score variants from earlier tiers.
-        # For those tiers we show the top-ranked variants regardless of source.
-        _SCORING_TIERS = {4, 5}
+        # Collect top mutations from steps in this tier
+        _SCORING_TIERS = {5, 6}
         tier_step_set = set(steps)
         tier_variants: list[ProteinCandidate] = []
         for step in steps:
             for v in step_mutations.get(step, []):
                 if tier_num in _SCORING_TIERS:
-                    # Scoring tier: include all variants ranked by this step
                     tier_variants.append(v)
                 else:
-                    # Generative tier: keep variant only if a mutation originated here
                     if any(m.source_step in tier_step_set for m in v.mutations):
                         tier_variants.append(v)
         tier_variants.sort(
@@ -1125,52 +1774,72 @@ def _stage_sections(
   <p class="subtitle" style="margin-top:0.6rem">{_html.escape(tier_desc)}</p>
 """)
 
-        # Recommended mutations table (skip for Stages 1, 2, 3)
-        if tier_num not in (1, 2, 3):
+        # Sequence liabilities table for stage 1
+        if tier_num == 1:
+            parts.append(_sequence_liabilities_section(results))
+
+        # Recommended mutations table for stages that produce or rank variants
+        if tier_num >= 2:
             recs = tier_variants[:10]
             if recs:
                 parts.append(_stage_recs_table(recs, tier_num))
 
-        # Sequence liabilities for stage 1
-        if tier_num == 1:
-            parts.append(_sequence_liabilities_section(results))
-
-        # Per-step collapsible details
+        # Per-step collapsible details — show ALL steps now
         for step_name in steps:
             result = results[step_name]
             variants = step_mutations.get(step_name, [])
-            # Skip steps already shown in liabilities, and sequence_complexity
-            if step_name in ("cysteine_scan", "motif_scan", "sequence_complexity") and tier_num == 1:
-                continue
-            # Skip find_homologs and consensus_design in Stage 2
-            if step_name in ("find_homologs", "consensus_design") and tier_num == 2:
-                continue
-            # Skip predict_structure in Stage 3 (passes through prior variants unchanged)
-            if step_name == "predict_structure" and tier_num == 3:
-                continue
             total = len(variants)
             n_warnings = len(result.warnings)
-            warn_badge = f' &middot; <span class="warn">{n_warnings} warnings</span>' if n_warnings else ""
-            score_keys = _best_score_keys(variants)
-            score_hdrs = "".join(f"<th>{_html.escape(k)}</th>" for k in score_keys)
+            warn_badge = f' &middot; <span class="warn">{n_warnings} warning{"s" if n_warnings != 1 else ""}</span>' if n_warnings else ""
+
+            # Step title with descriptive subtitle
+            step_title = step_name.replace('_', ' ').title()
+
+            # Status indicator
+            has_data = total > 0 or step_name in ("find_homologs", "predict_structure", "sequence_complexity")
+            status_icon = '\u2714' if has_data and n_warnings == 0 else '\u26a0' if n_warnings > 0 else '\u2714'
+
+            # Build count badge text
+            if step_name == "find_homologs":
+                parent = next((c for c in result.candidates if c.parent_id is None), None)
+                n_hom = parent.metadata.get("n_homologs", 0) if parent else 0
+                badge_text = f"{n_hom} homologs"
+            elif step_name == "predict_structure":
+                parent = next((c for c in result.candidates if c.parent_id is None), None)
+                plddt_val = parent.scores.get("plddt", 0) if parent else 0
+                badge_text = f"pLDDT {plddt_val:.1f}"
+            elif step_name == "sequence_complexity":
+                parent = next((c for c in result.candidates if c.parent_id is None), None)
+                n_issues = int(parent.scores.get("complexity_issues", 0)) if parent else 0
+                badge_text = f"{n_issues} issues"
+            else:
+                badge_text = f"{total} variant{'s' if total != 1 else ''}"
+
             uid = step_name.replace(" ", "_")
 
+            # Default open for steps with data
+            open_attr = " open" if total > 0 and total <= 30 else ""
+
             parts.append(f"""
-<details class="step-card">
+<details class="step-card"{open_attr}>
   <summary>
-    {_html.escape(step_name.replace('_', ' ').title())}
-    <span class="count-badge">{total} variant{'s' if total != 1 else ''}{warn_badge}</span>
+    <span class="step-status">{status_icon}</span>
+    {_html.escape(step_title)}
+    <span class="count-badge">{badge_text}{warn_badge}</span>
   </summary>
   <div class="inner">
 """)
+
+            # Always show summary card
+            parts.append(_step_summary_card(step_name, result))
+
             if not variants:
-                if result.warnings:
-                    for w in result.warnings[:5]:
-                        parts.append(f'<p class="warn" style="font-size:0.85rem">\u26a0 {_html.escape(w)}</p>')
-                else:
-                    parts.append('<p class="muted">No variant mutations produced by this step.</p>')
                 parts.append("</div></details>")
                 continue
+
+            # Variant table
+            score_keys = _best_score_keys(variants)
+            score_hdrs = "".join(f"<th>{_html.escape(k)}</th>" for k in score_keys)
 
             parts.append(f'<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Variant</th><th>Mutations</th>{score_hdrs}</tr></thead>')
             parts.append(f'<tbody id="tbody-{uid}">')
@@ -1198,17 +1867,11 @@ def _stage_sections(
       Show {showing_extra} more ({total} total)
     </button>""")
 
-            if result.warnings:
-                parts.append('<div style="margin-top:0.6rem">')
-                for w in result.warnings[:5]:
-                    parts.append(f'<p class="warn" style="font-size:0.82rem">\u26a0 {_html.escape(w)}</p>')
-                parts.append("</div>")
-
             parts.append("</div></details>")
 
         parts.append("</div><!-- /section -->")
 
-    # Toggle‑rows script
+    # Toggle-rows script
     parts.append("""
 </div><!-- /content -->
 <script>
@@ -1254,13 +1917,15 @@ def _stage_recs_table(recs: list[ProteinCandidate], tier_num: int) -> str:
                 short = key.replace("_", " ").split()[0]
                 score_parts.append(f"{short}={_fmt_score(v.scores[key])}")
 
+        _em_dash = '\u2014'
+        score_detail = '; '.join(score_parts) if score_parts else _em_dash
         rows.append(f"""<tr>
   <td><span class="rank {badge_cls}">{i}</span></td>
   <td><strong>{_html.escape(v.name)}</strong></td>
   <td class="mono">{_html.escape(mut_strs)}</td>
   <td>{_html.escape(source)}</td>
   <td class="{comp_css}">{comp:+.4f}</td>
-  <td class="muted" style="font-size:0.78rem">{'; '.join(score_parts) if score_parts else '\u2014'}</td>
+  <td class="muted" style="font-size:0.78rem">{score_detail}</td>
 </tr>""")
 
     return f"""
