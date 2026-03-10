@@ -79,21 +79,30 @@ protein-opt step consensus_design -i find_homologs_result.json -o consensus.json
 ### Run the full pipeline
 
 ```bash
-# Default pipeline (Tier 1 steps)
-protein-opt run -i my_enzyme.fasta -o results/
+# Just point at your FASTA — results and report appear next to it
+protopt run my_enzyme.fasta
 
-# Custom pipeline from config
-protein-opt run -i my_enzyme.fasta -c configs/default.yaml -o results/
+# With a custom config
+protopt run my_enzyme.fasta -c configs/custom.yaml
 ```
 
-### Rank and report
+This creates:
+```
+my_enzyme.fasta            # your input
+my_enzyme_results/         # step JSONs, structures, logs
+my_enzyme_report.html      # interactive HTML report with 3D viewer
+```
+
+### Regenerate the report
 
 ```bash
-# Aggregate scores and show top candidates
-protein-opt rank -i results/combine_variants.json -n 20
+protopt report my_enzyme.fasta
+```
 
-# Generate HTML report from all step outputs
-protein-opt report -d results/ -o report.html
+### Rank and inspect candidates
+
+```bash
+protopt rank -i my_enzyme_results/combine_variants.json -n 20
 ```
 
 ### List available steps

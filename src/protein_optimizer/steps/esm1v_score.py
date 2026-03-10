@@ -46,20 +46,42 @@ class ESM1vScoreStep(BaseStep):
         candidates: list[ProteinCandidate] = list(step_input.candidates)
         warnings: list[str] = []
 
-        # Collect unique sequences to score (avoid scoring duplicates)
-        seq_map: dict[str, list[ProteinCandidate]] = {}
-        for c in candidates:
-            seq_key = c.sequence[:1022]
-            if seq_key not in seq_map:
-                seq_map[seq_key] = []
-            seq_map[seq_key].append(c)
+        # Find wild-type (parent) sequence
+        parent = next((c for c in candidates if c.parent_id is None), None)
+        variants = [c for c in candidates if c.parent_id is not None]
 
-        # Prepare input for helper script
+        if parent is None:
+            warnings.append("No wild-type parent sequence found for ESM-1v scoring.")
+            return StepResult(
+                step_name=self.name, candidates=candidates,
+                config_used=config, warnings=warnings,
+            )
+
+        # Build variant descriptors with mutation positions
+        variant_descs: list[dict] = []
+        cand_index: list[ProteinCandidate] = []
+        for c in variants:
+            muts = []
+            for m in (c.mutations or []):
+                muts.append({
+                    "pos": m.position - 1,  # 0-indexed for the helper
+                    "wt_aa": m.wt,
+                    "mut_aa": m.mut,
+                })
+            if muts:
+                variant_descs.append({"id": c.candidate_id, "mutations": muts})
+                cand_index.append(c)
+
+        if not variant_descs:
+            warnings.append("No variants with mutations found.")
+            return StepResult(
+                step_name=self.name, candidates=candidates,
+                config_used=config, warnings=warnings,
+            )
+
         helper_input = {
-            "sequences": [
-                {"id": f"seq_{i}", "sequence": seq}
-                for i, seq in enumerate(seq_map.keys())
-            ]
+            "wt_sequence": parent.sequence,
+            "variants": variant_descs,
         }
 
         scores = _run_esm1v_subprocess(helper_input, conda_env, n_models)
@@ -70,37 +92,30 @@ class ESM1vScoreStep(BaseStep):
                 "has fair-esm and CUDA torch installed."
             )
             return StepResult(
-                step_name=self.name,
-                candidates=candidates,
-                config_used=config,
-                warnings=warnings,
+                step_name=self.name, candidates=candidates,
+                config_used=config, warnings=warnings,
             )
 
         # Map scores back to candidates
-        seq_keys = list(seq_map.keys())
-        for score_entry in scores:
-            idx = int(score_entry["id"].split("_")[1])
-            pll = score_entry["esm1v_pll"]
-            seq_key = seq_keys[idx]
-            for c in seq_map[seq_key]:
-                c.scores["esm1v_pll"] = pll
+        score_map = {s["id"]: s for s in scores}
+        wt_pll = scores[0].get("wt_pll") if scores else None
 
-        # Compute delta relative to parent
-        parent_pll: dict[str, float] = {}
-        for c in candidates:
-            if c.parent_id is None and "esm1v_pll" in c.scores:
-                parent_pll[c.candidate_id] = c.scores["esm1v_pll"]
+        if wt_pll is not None:
+            parent.scores["esm1v_pll"] = wt_pll
 
-        for c in candidates:
-            if c.parent_id and c.parent_id in parent_pll:
-                if "esm1v_pll" in c.scores:
-                    c.scores["esm1v_delta"] = (
-                        c.scores["esm1v_pll"] - parent_pll[c.parent_id]
-                    )
+        for c in cand_index:
+            entry = score_map.get(c.candidate_id)
+            if entry and entry.get("esm1v_score") is not None:
+                c.scores["esm1v_delta"] = entry["esm1v_score"]
+                if wt_pll is not None:
+                    c.scores["esm1v_pll"] = wt_pll + entry["esm1v_score"]
 
-
-        n_scored = sum(1 for c in candidates if "esm1v_pll" in c.scores)
-        logger.info(f"ESM-1v scored {n_scored}/{len(candidates)} candidates")
+        n_scored = sum(1 for c in candidates if "esm1v_delta" in c.scores)
+        n_improved = sum(1 for c in candidates if c.scores.get("esm1v_delta", -1) > 0)
+        logger.info(
+            f"ESM-1v scored {n_scored}/{len(variants)} variants "
+            f"({n_improved} improved over WT)"
+        )
 
         return StepResult(
             step_name=self.name,
@@ -127,6 +142,9 @@ def _run_esm1v_subprocess(
                 logger.error(f"ESM-1v helper script not found: {helper}")
                 return None
 
+            n_variants = len(helper_input.get("variants", helper_input.get("sequences", [])))
+            mode = "variant" if "variants" in helper_input else "full-PLL"
+
             cmd = [
                 "conda", "run", "--no-capture-output", "-n", conda_env,
                 "python", helper,
@@ -135,8 +153,8 @@ def _run_esm1v_subprocess(
             ]
 
             logger.info(
-                f"Dispatching ESM-1v scoring to conda env '{conda_env}' "
-                f"({len(helper_input['sequences'])} sequences, {n_models} models)..."
+                f"Dispatching ESM-1v {mode} scoring to conda env '{conda_env}' "
+                f"({n_variants} entries, {n_models} models)..."
             )
 
             result = subprocess.run(
@@ -144,7 +162,7 @@ def _run_esm1v_subprocess(
             )
 
             if result.returncode != 0:
-                logger.error(f"ESM-1v helper failed:\n{result.stderr[:1000]}")
+                logger.error(f"ESM-1v helper failed:\n{result.stderr[:2000]}")
                 return None
 
             if not out_path.exists():

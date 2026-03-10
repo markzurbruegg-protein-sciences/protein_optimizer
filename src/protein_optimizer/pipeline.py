@@ -191,10 +191,12 @@ class Pipeline:
 
         # Determine report output directory: same folder as the input FASTA
         report_dir = output_dir
+        protein_name = "report"
         if input_path:
             fasta_dir = Path(input_path).resolve().parent
             if fasta_dir.is_dir():
                 report_dir = fasta_dir
+            protein_name = Path(input_path).stem
 
         # ── v2 report (3D viewer + metrics) ──
         try:
@@ -209,14 +211,15 @@ class Pipeline:
                     if sp and Path(sp).exists():
                         pdb_path = sp
                         break
-            # Fallback: look in structures/
+            # Fallback: look in structures/ (prefer main protein PDB)
             if not pdb_path:
                 struct_dir = output_dir / "structures"
-                for ext in ("*.pdb", "*.PDB"):
-                    pdbs = list(struct_dir.glob(ext))
-                    if pdbs:
-                        pdb_path = str(pdbs[0])
-                        break
+                if struct_dir.is_dir():
+                    pdbs = sorted(struct_dir.glob("*.pdb"))
+                    main_pdbs = [p for p in pdbs if "rfdiff" not in p.name.lower()]
+                    chosen = main_pdbs[0] if main_pdbs else (pdbs[0] if pdbs else None)
+                    if chosen:
+                        pdb_path = str(chosen)
 
             parent_name = ""
             for c in result.candidates:
@@ -225,7 +228,7 @@ class Pipeline:
                     break
             report_title = f"{parent_name} — Protein Optimization Report"
 
-            report_path = report_dir / "report.html"
+            report_path = report_dir / f"{protein_name}_report.html"
             generate_report_v2(
                 results=self.results,
                 output_path=report_path,
@@ -233,29 +236,18 @@ class Pipeline:
                 title=report_title,
                 config=self.config,
             )
-            logger.info(f"Report v2 saved to {report_path}")
-
-            # Also save a copy in the results directory if different
-            if report_dir != output_dir:
-                generate_report_v2(
-                    results=self.results,
-                    output_path=output_dir / "report.html",
-                    pdb_path=pdb_path,
-                    title=report_title,
-                    config=self.config,
-                )
+            logger.info(f"Report saved to {report_path}")
         except Exception as e:
-            logger.warning(f"Report v2 generation failed: {e}", exc_info=True)
-            # Fallback to v1
+            logger.warning(f"Report generation failed: {e}", exc_info=True)
             try:
                 from protein_optimizer.reporting.html_report import generate_html_report
                 generate_html_report(
                     results=self.results,
-                    output_path=output_dir / "report.html",
+                    output_path=output_dir / f"{protein_name}_report.html",
                     config=self.config,
                 )
             except Exception as e2:
-                logger.warning(f"Report generation skipped: {e2}")
+                logger.warning(f"Fallback report generation skipped: {e2}")
 
 
 def _import_all_steps() -> None:

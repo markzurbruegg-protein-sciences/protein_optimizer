@@ -24,8 +24,8 @@ pipeline:
     - design_validate
     - combine_variants
     # ── Stage 5: PLM Scoring (final evaluation) ──
-    # - esm1v_score
-    # - esmif1_score
+    - esm1v_score
+    - esmif1_score
     - e1_score
 
 global:

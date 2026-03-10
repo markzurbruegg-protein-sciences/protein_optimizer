@@ -1,7 +1,0 @@
-- inference.input_pdb=/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/structures/jcDRM.pdb
-- inference.output_prefix=/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/structures/jcDRM_rfdiff
-- inference.num_designs=5
-- inference.ckpt_path=/home/markzurbruegg/library-design/rfdiffusion2-lib/RFdiffusion2/rf_diffusion/model_weights/RFD_140.pt
-- diffuser.partial_T=15
-- diffuser.T=50
-- contigmap.contigs=[A1-350]

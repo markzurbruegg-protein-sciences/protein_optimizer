@@ -51,6 +51,7 @@ dev = [
 
 [project.scripts]
 protein-opt = "protein_optimizer.cli:main"
+protopt = "protein_optimizer.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

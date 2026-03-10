@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GFP_example — Protein Optimization Report</title>
+<script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+<style>
+/* ── Reset & base ── */
+:root {
+  --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff;
+  --green: #3fb950; --red: #f85149; --yellow: #d29922; --purple: #bc8cff;
+  --card-bg: #161b22; --border: #30363d; --hover: rgba(88,166,255,0.06);
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--fg); line-height: 1.55;
+}
+
+/* ── Top bar ── */
+.topbar {
+  background: var(--card-bg); border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
+}
+.topbar h1 { font-size: 1.35rem; color: var(--accent); }
+.topbar .meta { color: #8b949e; font-size: 0.82rem; margin-left: auto; }
+
+/* ── Hero grid (3D + metrics) ── */
+.hero {
+  display: grid; grid-template-columns: 1fr 380px;
+  gap: 0; border-bottom: 1px solid var(--border);
+  min-height: 520px;
+}
+@media (max-width: 960px) { .hero { grid-template-columns: 1fr; } }
+
+.viewer-wrap {
+  position: relative; background: #000;
+  min-height: 500px;
+}
+.viewer-wrap .viewer-label {
+  position: absolute; top: 10px; left: 14px; z-index: 2;
+  font-size: 0.75rem; color: #8b949e; background: rgba(0,0,0,.65);
+  padding: 3px 8px; border-radius: 4px;
+}
+#viewport { width: 100%; height: 100%; min-height: 500px; }
+
+/* ── Metrics sidebar ── */
+.metrics-panel {
+  background: var(--card-bg); border-left: 1px solid var(--border);
+  padding: 1.25rem 1.5rem; overflow-y: auto; max-height: 520px;
+}
+.metrics-panel h2 { font-size: 1.05rem; color: var(--accent); margin-bottom: 0.9rem; }
+.metric-group { margin-bottom: 1rem; }
+.metric-group h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: #8b949e; margin-bottom: 0.4rem; }
+.metric-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.3rem 0; border-bottom: 1px solid var(--border); font-size: 0.88rem;
+}
+.metric-row .label { color: var(--fg); }
+.metric-row .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.metric-row .value.good { color: var(--green); }
+.metric-row .value.warn { color: var(--yellow); }
+.metric-row .value.bad { color: var(--red); }
+
+/* ── Content area ── */
+.content { max-width: 1200px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+
+/* ── Section ── */
+.section { margin-bottom: 2.5rem; }
+.section h2 {
+  font-size: 1.15rem; color: var(--accent); margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+}
+.section .subtitle { color: #8b949e; font-size: 0.85rem; margin-bottom: 1rem; }
+
+/* ── Table ── */
+.tbl-wrap { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse; font-size: 0.84rem;
+}
+th {
+  background: var(--card-bg); color: var(--accent); padding: 0.55rem 0.6rem;
+  text-align: left; border-bottom: 2px solid var(--border); position: sticky; top: 0;
+  font-weight: 600; white-space: nowrap;
+}
+td {
+  padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border);
+}
+tr:hover { background: var(--hover); }
+.mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 0.82rem; }
+.good { color: var(--green); }
+.bad { color: var(--red); }
+.warn { color: var(--yellow); }
+.muted { color: #8b949e; }
+
+/* ── Rank badge ── */
+.rank {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%; font-size: 0.78rem; font-weight: 700;
+  background: var(--card-bg); border: 1px solid var(--border); color: var(--accent);
+}
+.rank.gold { background: #d4a017; color: #000; border-color: #d4a017; }
+.rank.silver { background: #8b949e; color: #000; border-color: #8b949e; }
+.rank.bronze { background: #a0522d; color: #fff; border-color: #a0522d; }
+
+/* ── Tier header ── */
+.tier-header {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin: 1.5rem 0 0.5rem; padding: 0.5rem 0.7rem;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px;
+  cursor: default;
+}
+.tier-badge {
+  font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+  background: var(--accent); color: #000; white-space: nowrap;
+}
+.tier-header .tier-title { font-size: 0.95rem; font-weight: 600; }
+
+/* ── Step card ── */
+.step-card {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+  margin: 0.6rem 0; overflow: hidden;
+}
+.step-card summary {
+  padding: 0.65rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.92rem;
+  list-style: none; display: flex; align-items: center; gap: 0.6rem;
+}
+.step-card summary::-webkit-details-marker { display: none; }
+.step-card summary::before {
+  content: '▸'; color: var(--accent); transition: transform 0.15s;
+}
+.step-card[open] summary::before { transform: rotate(90deg); }
+.step-card .count-badge {
+  font-size: 0.72rem; padding: 1px 7px; border-radius: 10px;
+  background: var(--border); color: var(--fg); margin-left: auto;
+}
+.step-card .inner { padding: 0 1rem 1rem; }
+
+/* ── Show more button ── */
+.show-more-btn {
+  display: inline-block; margin-top: 0.5rem; padding: 0.35rem 1rem;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--accent); cursor: pointer; font-size: 0.82rem;
+}
+.show-more-btn:hover { background: var(--border); }
+.hidden-rows { display: none; }
+.hidden-rows.show { display: table-row-group; }
+
+/* ── Legend highlight key ── */
+.legend {
+  display: flex; gap: 1.2rem; flex-wrap: wrap; margin: 0.7rem 0 0;
+  font-size: 0.78rem; color: #8b949e;
+}
+.legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.legend .dot {
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+}
+
+/* ── Viewer toolbar & legend ── */
+.viewer-toolbar {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 2; display: flex; align-items: center; gap: 3px;
+  background: rgba(22,27,34,0.92); padding: 4px 6px;
+  border-radius: 8px; border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.view-btn {
+  padding: 5px 12px; border-radius: 5px; border: 1px solid transparent;
+  background: transparent; color: #8b949e; cursor: pointer;
+  font-size: 0.73rem; font-weight: 600; transition: all 0.15s;
+  white-space: nowrap; font-family: inherit;
+}
+.view-btn:hover { background: rgba(88,166,255,0.12); color: var(--fg); }
+.view-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.toolbar-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.viewer-legend {
+  position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+  z-index: 2; font-size: 0.73rem; color: #c9d1d9;
+  background: rgba(22,27,34,0.85); padding: 5px 14px; border-radius: 6px;
+  border: 1px solid var(--border); backdrop-filter: blur(8px);
+  white-space: nowrap; display: flex; align-items: center; gap: 0.7rem;
+}
+
+/* ── Tier selector bar (top of viewer) ── */
+.tier-toolbar {
+  position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
+  z-index: 2; display: flex; align-items: center; gap: 3px;
+  background: rgba(22,27,34,0.92); padding: 3px 6px;
+  border-radius: 7px; border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.tier-btn {
+  padding: 4px 10px; border-radius: 4px; border: 1px solid transparent;
+  background: transparent; color: #8b949e; cursor: pointer;
+  font-size: 0.70rem; font-weight: 600; transition: all 0.15s;
+  white-space: nowrap; font-family: inherit;
+}
+.tier-btn:hover { background: rgba(88,166,255,0.12); color: var(--fg); }
+.tier-btn.active { background: var(--purple); color: #000; border-color: var(--purple); }
+.tier-btn .tier-pip {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  margin-right: 3px; vertical-align: middle;
+}
+
+/* ── Step summary stats ── */
+.summary-stats {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 0.8rem;
+}
+.stat-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.75rem; border-radius: 6px;
+  background: rgba(88,166,255,0.08); border: 1px solid var(--border);
+  font-size: 0.8rem; color: var(--fg);
+}
+.stat-chip strong { color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat-chip.good strong { color: var(--green); }
+.stat-chip.warn strong { color: var(--yellow); }
+.stat-chip.bad strong { color: var(--red); }
+
+/* ── Step status icon ── */
+.step-status {
+  font-size: 0.85rem; margin-right: 0.15rem;
+}
+</style>
+</head>
+<body>
+
+
+<div class="topbar">
+  <h1>GFP_example</h1>
+  <span class="meta">238 residues &middot; 26885.3 Da &middot; Generated 2026-03-09 23:34</span>
+</div>
+
+<div class="hero">
+  <!-- 3D Viewer -->
+  <div class="viewer-wrap">
+    <span class="viewer-label">3Dmol.js &middot; Boltz-2 predicted structure &middot; pLDDT coloring</span>
+    <div id="viewport"></div>
+    <div class="tier-toolbar" id="tier-bar"></div>
+    <div class="viewer-legend" id="view-legend"></div>
+    <div class="viewer-toolbar">
+      <button class="view-btn mode active" data-mode="plddt" onclick="setView('plddt')">Confidence</button>
+      <button class="view-btn mode" data-mode="hydrophobicity" onclick="setView('hydrophobicity')">Hydrophobicity</button>
+      <button class="view-btn mode" data-mode="charge" onclick="setView('charge')">Charge</button>
+      <button class="view-btn mode" data-mode="ss" onclick="setView('ss')">2&deg; Structure</button>
+      <div class="toolbar-sep"></div>
+      <button class="view-btn" id="btn-surface" onclick="toggleSurface()">Surface</button>
+      <button class="view-btn active" id="btn-mutations" onclick="toggleMutations()">Mutations</button>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-panel">
+    <h2>Protein Metrics</h2>
+
+    <div class="metric-group">
+      <h3>Structure Quality</h3>
+      <div class="metric-row"><span class="label">Mean pLDDT</span><span class="value bad">0.0</span></div>
+      <div class="metric-row"><span class="label">Min pLDDT</span><span class="value bad">0.0</span></div>
+    </div>
+
+    <div class="metric-group">
+      <h3>Thermal Stability</h3>
+      <div class="metric-row"><span class="label">Instability Index</span><span class="value good">9.3 (Stable)</span></div>
+      <div class="metric-row"><span class="label">Aliphatic Index</span><span class="value good">74.9</span></div>
+    </div>
+
+    <div class="metric-group">
+      <h3>Aggregation Propensity</h3>
+      <div class="metric-row"><span class="label">Agg. Score</span><span class="value good">0.047</span></div>
+      <div class="metric-row"><span class="label">Hydrophobic Patches</span><span class="value good">4</span></div>
+      <div class="metric-row"><span class="label">Surface Patches (SAP)</span><span class="value">0</span></div>
+    </div>
+
+    <div class="metric-group">
+      <h3>Physicochemical</h3>
+      <div class="metric-row"><span class="label">GRAVY</span><span class="value warn">-0.521</span></div>
+      <div class="metric-row"><span class="label">Net Charge (pH 7.4)</span><span class="value good">-7.9</span></div>
+      <div class="metric-row"><span class="label">Isoelectric Point</span><span class="value">5.60</span></div>
+      <div class="metric-row"><span class="label">Cysteines</span><span class="value">2</span></div>
+    </div>
+
+    <div class="metric-group">
+      <h3>Expression (E. coli)</h3>
+      <div class="metric-row"><span class="label">Rare-codon AAs (W/C/M)</span><span class="value">9</span></div>
+      <div class="metric-row"><span class="label">Prolines</span><span class="value">10</span></div>
+    </div>
+
+    <div class="legend">
+      <strong style="color:var(--fg)">Highlighted:</strong>
+      <span><span class="dot" style="background:#ff6b6b"></span>C70S</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var pdbData = ``;
+  var viewer = $3Dmol.createViewer("viewport", {backgroundColor:"#000"});
+  viewer.addModel(pdbData, "pdb");
+
+  var hlPos = [70];
+  var hlLbl = ["C70S"];
+  var hlClr = ["#ff6b6b"];
+  var surfOn = false, mutOn = true, curView = "plddt";
+
+  // Per-tier mutation data
+  var tierData = {"1": [{"pos": 70, "label": "C70S", "score": 0.5}]};
+  var curTier = "all";
+  var tierNames = {1:"Sequence Heuristics",2:"Evolutionary Analysis",
+    3:"Structure-based",4:"AI / ML Scoring",5:"Generative Design"};
+  var tierColors = {1:"#3fb950",2:"#58a6ff",3:"#d29922",4:"#bc8cff",5:"#f85149"};
+  var mutColors = ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#bc8cff",
+    "#ff9ff3","#54a0ff","#5f27cd","#01a3a4","#f368e0",
+    "#ff6348","#7bed9f","#70a1ff","#dfe6e9","#ffeaa7",
+    "#fd79a8","#00cec9","#e17055","#0984e3","#6c5ce7"];
+
+  // Build tier toolbar buttons
+  (function buildTierBar() {
+    var bar = document.getElementById("tier-bar");
+    var keys = Object.keys(tierData).sort();
+    if(keys.length === 0) { bar.style.display = "none"; return; }
+    var allBtn = '<button class="tier-btn active" data-tier="all">' +
+      '<span class="tier-pip" style="background:#c9d1d9"></span>Top 5</button>';
+    bar.innerHTML = allBtn;
+    keys.forEach(function(k) {
+      var n = tierData[k].length;
+      var cl = tierColors[k] || "#8b949e";
+      bar.innerHTML += '<button class="tier-btn" data-tier="'+k+'">' +
+        '<span class="tier-pip" style="background:'+cl+'"></span>Tier '+k+
+        ' <span style="opacity:0.6;font-size:0.65rem">('+n+')</span></button>';
+    });
+    bar.addEventListener("click", function(e) {
+      var btn = e.target.closest(".tier-btn");
+      if(btn) window.setTier(btn.dataset.tier);
+    });
+  })();
+
+  var aa3 = {ALA:"A",ARG:"R",ASN:"N",ASP:"D",CYS:"C",GLU:"E",GLN:"Q",
+    GLY:"G",HIS:"H",ILE:"I",LEU:"L",LYS:"K",MET:"M",PHE:"F",
+    PRO:"P",SER:"S",THR:"T",TRP:"W",TYR:"Y",VAL:"V"};
+  var hyd = {A:1.8,R:-4.5,N:-3.5,D:-3.5,C:2.5,E:-3.5,Q:-3.5,G:-0.4,
+    H:-3.2,I:4.5,L:3.8,K:-3.9,M:1.9,F:2.8,P:-1.6,S:-0.8,
+    T:-0.7,W:-0.9,Y:-1.3,V:4.2};
+  var chg = {D:-1,E:-1,K:1,R:1,H:0.5};
+
+  function hex(r,g,b) {
+    return "#"+[r,g,b].map(function(v){
+      return Math.round(v*255).toString(16).padStart(2,"0");
+    }).join("");
+  }
+
+  function plddtC(a) {
+    var b=a.b;
+    if(b>=90) return "#3fb950"; if(b>=70) return "#58a6ff";
+    if(b>=50) return "#d29922"; return "#f85149";
+  }
+
+  function hydroC(a) {
+    var c=aa3[a.resn]||"G", h=hyd[c]||0, t=(h+4.5)/9;
+    if(t<0.5) { var s=t*2; return hex(0.2+0.8*s, 0.4+0.6*s, 1); }
+    else { var s=(t-0.5)*2; return hex(1, 1-0.6*s, 1-0.9*s); }
+  }
+
+  function chargeC(a) {
+    var c=aa3[a.resn]||"G", q=chg[c]||0;
+    if(q>0) return hex(0.3, 0.5, 1);
+    if(q<0) return hex(1, 0.3, 0.3);
+    return "#aaaaaa";
+  }
+
+  function ssC(a) {
+    if(a.ss==="h") return "#ff6b9d";
+    if(a.ss==="s") return "#ffd93d";
+    return "#8b949e";
+  }
+
+  var cfMap = {plddt:plddtC, hydrophobicity:hydroC, charge:chargeC, ss:ssC};
+
+  function applyHL() {
+    viewer.removeAllLabels();
+    if(!mutOn) return;
+    var positions, labels, colors;
+    if(curTier === "all") {
+      positions = hlPos; labels = hlLbl; colors = hlClr;
+    } else {
+      var items = tierData[curTier] || [];
+      positions = items.map(function(d){ return d.pos; });
+      labels = items.map(function(d){ return d.label; });
+      colors = mutColors;
+    }
+    for(var i=0; i<positions.length; i++) {
+      var p=positions[i], cl=colors[i % colors.length];
+      viewer.addStyle({resi:p}, {stick:{radius:0.18, color:cl}});
+      var atoms = viewer.selectedAtoms({resi:p, atom:"CA"});
+      if(atoms.length)
+        viewer.addLabel(labels[i]||String(p), {
+          position:atoms[0], backgroundColor:cl, backgroundOpacity:0.85,
+          fontColor:"#000", fontSize:12, showBackground:true
+        });
+    }
+  }
+
+  window.setTier = function(t) {
+    curTier = t;
+    mutOn = true;
+    document.getElementById("btn-mutations").classList.add("active");
+    window.setView(curView);
+    document.querySelectorAll(".tier-btn").forEach(function(b){
+      b.classList.toggle("active",
+        (t==="all" && b.textContent.indexOf("Top 5")>=0) ||
+        (t!=="all" && b.textContent.indexOf("Tier "+t)>=0));
+    });
+  };
+
+  function updSurf() {
+    viewer.removeAllSurfaces();
+    if(!surfOn) return;
+    viewer.addSurface($3Dmol.SurfaceType.VDW,
+      {opacity:0.82, colorfunc:cfMap[curView]});
+  }
+
+  function updLegend(m) {
+    var el = document.getElementById("view-legend");
+    if(m==="plddt") el.innerHTML =
+      '<span style="color:#3fb950">&#9679;</span>&thinsp;&#8805;90 '+
+      '<span style="color:#58a6ff">&#9679;</span>&thinsp;70&#8211;90 '+
+      '<span style="color:#d29922">&#9679;</span>&thinsp;50&#8211;70 '+
+      '<span style="color:#f85149">&#9679;</span>&thinsp;&lt;50';
+    else if(m==="hydrophobicity") el.innerHTML =
+      '<span style="display:inline-block;width:90px;height:10px;border-radius:3px;'+
+      'background:linear-gradient(to right,#3366ff,#ffffff,#ff6600);'+
+      'vertical-align:middle"></span> Hydrophilic &#8594; Hydrophobic';
+    else if(m==="charge") el.innerHTML =
+      '<span style="color:#4d80ff">&#9679;</span> Positive (K,R,H) '+
+      '<span style="color:#aaaaaa">&#9679;</span> Neutral '+
+      '<span style="color:#ff4d4d">&#9679;</span> Negative (D,E)';
+    else if(m==="ss") el.innerHTML =
+      '<span style="color:#ff6b9d">&#9679;</span> &#945;-Helix '+
+      '<span style="color:#ffd93d">&#9679;</span> &#946;-Sheet '+
+      '<span style="color:#8b949e">&#9679;</span> Coil/Loop';
+  }
+
+  window.setView = function(m) {
+    curView = m;
+    viewer.setStyle({}, {cartoon:{colorfunc:cfMap[m]}});
+    applyHL();
+    if(surfOn) updSurf();
+    viewer.render();
+    document.querySelectorAll(".view-btn.mode").forEach(function(b){
+      b.classList.toggle("active", b.dataset.mode===m);
+    });
+    var lbl = {plddt:"pLDDT coloring", hydrophobicity:"Hydrophobicity (Kyte-Doolittle)",
+      charge:"Charge distribution", ss:"Secondary structure"};
+    document.querySelector(".viewer-label").textContent =
+      "3Dmol.js \u00b7 Boltz-2 \u00b7 " + lbl[m];
+    updLegend(m);
+  };
+
+  window.toggleSurface = function() {
+    surfOn = !surfOn; updSurf(); viewer.render();
+    document.getElementById("btn-surface").classList.toggle("active", surfOn);
+  };
+
+  window.toggleMutations = function() {
+    mutOn = !mutOn; window.setView(curView);
+    document.getElementById("btn-mutations").classList.toggle("active", mutOn);
+  };
+
+  // Initial render
+  viewer.setStyle({}, {cartoon:{colorfunc:plddtC}});
+  applyHL();
+  viewer.zoomTo();
+  viewer.render();
+  viewer.zoom(1.1);
+  updLegend("plddt");
+})();
+</script>
+
+<div class="content">
+
+<div class="section">
+  <div class="tier-header">
+    <span class="tier-badge">STAGE 1</span>
+    <span class="tier-title">Sequence Heuristics</span>
+  </div>
+  <p class="subtitle" style="margin-top:0.6rem">Quick sequence-level scans that flag chemical liabilities — unpaired cysteines, deamidation/oxidation motifs, proteolytic sites, and low-complexity regions. These are fast to compute and catch issues that affect shelf-life and manufacturability.</p>
+
+
+  <h3 style="color:var(--accent);margin:1rem 0 0.3rem">Sequence Liabilities</h3>
+  <p class="subtitle">
+    <strong>Unpaired cysteines</strong> may form non-native disulfides,
+    <strong>deamidation</strong> sites undergo backbone rearrangements,
+    <strong>oxidation</strong>-prone Met residues lose activity, and
+    <strong>proteolytic</strong> dibasic sites are cleaved by host proteases.
+    1 cysteine + 0 motif liabilities detected.
+  </p>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr>
+      <th>Pos</th><th>Res</th><th>Category</th><th>Risk</th>
+      <th>Rationale</th><th>Suggested Fix</th>
+    </tr></thead>
+    <tbody><tr><td>70</td><td class="mono">C</td><td><span style="background:#bc8cff;color:#000;padding:1px 7px;border-radius:4px;font-size:0.78rem;font-weight:600">Unpaired Cys</span></td><td class="warn" style="font-weight:600">0.50</td><td style="font-size:0.84rem">Free cysteine — may cause unwanted disulfides or oxidation</td><td class="mono">C70S</td></tr></tbody>
+  </table>
+  </div>
+
+
+<details class="step-card" open>
+  <summary>
+    <span class="step-status">⚠</span>
+    Cysteine Scan
+    <span class="count-badge">1 variant &middot; <span class="warn">1 warning</span></span>
+  </summary>
+  <div class="inner">
+
+<p class="warn" style="font-size:0.82rem;margin:0.25rem 0">⚠ GFP_example: Protected cysteines at positions [48] — skipped.</p>
+<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Variant</th><th>Mutations</th><th>cys_risk</th></tr></thead>
+<tbody id="tbody-cysteine_scan">
+<tr><td>1</td><td>GFP_example_C70S</td><td class="mono">C70S</td><td>0.5000</td></tr>
+</tbody></table></div>
+</div></details>
+</div><!-- /section -->
+
+</div><!-- /content -->
+<script>
+function toggleRows(uid, btn) {
+  var rows = document.querySelectorAll('.extra-row-' + uid);
+  var expanded = btn.getAttribute('data-expanded') === 'true';
+  rows.forEach(function(r) { r.style.display = expanded ? 'none' : ''; });
+  btn.setAttribute('data-expanded', expanded ? 'false' : 'true');
+  btn.textContent = expanded ? btn.textContent.replace('Show less', 'Show more') : 'Show less';
+}
+</script>
+
+
+<div style="text-align:center; padding: 2rem; color: #484f58; font-size: 0.78rem; border-top: 1px solid var(--border);">
+  protein-optimizer &middot; Report generated 2026-03-09 23:34:13
+</div>
+</body>
+</html>

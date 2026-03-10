@@ -46,10 +46,14 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+.cache/
 
-# Outputs
-results/
+# Backups
+*.bak
+
+# Pipeline outputs (generated at runtime)
+*_results/
+*_report.html
 outputs/
 *.pdb
-*.html
-!src/protein_optimizer/reporting/html_report.py
+pipeline.log

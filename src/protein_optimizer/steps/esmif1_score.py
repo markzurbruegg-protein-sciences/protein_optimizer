@@ -100,10 +100,19 @@ class ESMIF1ScoreStep(BaseStep):
 
 
 def _find_pdb(candidates, config):
+    """Find PDB structure path from config override, candidates, or output dir."""
+    # 1. Explicit config override
+    pdb = config.get("pdb_path")
+    if pdb and Path(pdb).exists():
+        return str(pdb)
+
+    # 2. Parent candidate structure_path
     for c in candidates:
         sp = c.structure_path or c.metadata.get("structure_path", "")
         if sp and Path(sp).exists() and c.parent_id is None:
             return sp
+
+    # 3. Prior results from predict_structure step
     prior = config.get("_prior_results", {})
     sr = prior.get("predict_structure")
     if sr and hasattr(sr, "candidates"):
@@ -111,6 +120,21 @@ def _find_pdb(candidates, config):
             sp = getattr(c, "structure_path", "") or c.metadata.get("structure_path", "")
             if sp and Path(sp).exists():
                 return sp
+
+    # 4. Auto-detect from output_dir/structures/
+    output_dir = config.get("_global", {}).get("output_dir", "")
+    if output_dir:
+        structs = Path(output_dir) / "structures"
+        if structs.is_dir():
+            for ext in ("*.pdb", "*.cif"):
+                pdbs = sorted(structs.glob(ext))
+                # Prefer non-rfdiff PDBs
+                main = [p for p in pdbs if "rfdiff" not in p.name]
+                if main:
+                    return str(main[0])
+                if pdbs:
+                    return str(pdbs[0])
+
     return None
 
 

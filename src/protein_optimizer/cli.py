@@ -1,11 +1,14 @@
 """Click CLI for the protein optimization pipeline.
 
 Provides:
-    protein-opt run           — run the full pipeline from a config YAML
-    protein-opt <step-name>   — run a single step independently
-    protein-opt list-steps    — show all available steps
-    protein-opt rank          — aggregate and rank candidates
-    protein-opt report        — generate HTML report
+    protopt -i my_protein.fasta         — run the full pipeline (shorthand)
+    protopt run <fasta>                 — run the full pipeline (explicit)
+    protopt report <fasta>             — (re)generate the HTML report
+    protopt step <name> -i …           — run a single step independently
+    protopt list-steps                 — show all available steps
+    protopt rank -i …                  — aggregate and rank candidates
+
+All outputs (results dir + report) are placed next to the input FASTA.
 """
 
 from __future__ import annotations
@@ -35,20 +38,94 @@ def _setup_logging(verbose: bool) -> None:
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
     ))
-    # Force stdout and flush after every log line
     root = logging.getLogger()
     root.setLevel(level)
     root.addHandler(handler)
-    # Make stdout unbuffered for nohup/redirect
     sys.stdout.reconfigure(line_buffering=True)
     sys.stderr.reconfigure(line_buffering=True)
 
 
-@click.group()
+# ── Shared helpers ───────────────────────────────────────────────────────
+
+
+def _resolve_paths(fasta: str) -> tuple[Path, Path, Path]:
+    """Return (fasta_path, results_dir, report_path) from a FASTA path."""
+    fasta_path = Path(fasta).resolve()
+    name = fasta_path.stem
+    results_dir = fasta_path.parent / f"{name}_results"
+    report_path = fasta_path.parent / f"{name}_report.html"
+    return fasta_path, results_dir, report_path
+
+
+def _auto_detect_pdb(results_dir: Path, results: dict[str, StepResult]) -> str | None:
+    """Find the best PDB from structure prediction or structures/ dir."""
+    # 1. From predict_structure metadata
+    struct_result = results.get("predict_structure")
+    if struct_result:
+        for c in struct_result.candidates:
+            sp = c.metadata.get("structure_path", "")
+            if sp and Path(sp).exists():
+                return sp
+
+    # 2. From structures/ dir (prefer main protein PDB over rfdiff outputs)
+    struct_dir = results_dir / "structures"
+    if struct_dir.is_dir():
+        pdbs = sorted(struct_dir.glob("*.pdb"))
+        main_pdbs = [p for p in pdbs if "rfdiff" not in p.name.lower()]
+        chosen = main_pdbs[0] if main_pdbs else (pdbs[0] if pdbs else None)
+        if chosen:
+            return str(chosen)
+
+    return None
+
+
+def _load_results(results_dir: Path) -> dict[str, StepResult]:
+    """Load all StepResult JSONs from a directory."""
+    results: dict[str, StepResult] = {}
+    for json_file in sorted(results_dir.glob("*.json")):
+        try:
+            sr = StepResult.load(json_file)
+            results[sr.step_name] = sr
+        except Exception:
+            pass
+    return results
+
+
+def _derive_title(results: dict[str, StepResult]) -> str:
+    """Derive a report title from the protein name."""
+    for key in reversed(list(results.keys())):
+        for c in results[key].candidates:
+            if c.parent_id is None:
+                return f"{c.name} — Protein Optimization Report"
+    return "Protein Optimization Report"
+
+
+@click.group(invoke_without_command=True)
 @click.option("-v", "--verbose", is_flag=True, help="Enable debug logging.")
-def main(verbose: bool) -> None:
-    """protein-opt: Modular protein optimization pipeline."""
+@click.option("-i", "--input", "input_fasta", type=click.Path(exists=True), default=None,
+              metavar="FASTA", help="Input FASTA file — runs the full pipeline directly.")
+@click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
+              metavar="YAML", help="Pipeline YAML config (default: configs/full_pipeline.yaml).")
+@click.pass_context
+def main(ctx: click.Context, verbose: bool, input_fasta: str | None, config_path: str | None) -> None:
+    """protopt — Modular protein optimization pipeline.
+
+    \b
+    Quick start (run full pipeline):
+        protopt -i my_protein.fasta
+        protopt -i my_protein.fasta -c configs/custom.yaml
+
+    \b
+    Subcommands:
+        protopt run <fasta>
+        protopt report <fasta>
+        protopt step <name> -i <file>
+        protopt list-steps
+    """
     _setup_logging(verbose)
+    # If -i was given and no subcommand, run the full pipeline immediately.
+    if input_fasta is not None and ctx.invoked_subcommand is None:
+        ctx.invoke(run, input_fasta=input_fasta, config_path=config_path)
 
 
 # ── Full pipeline ────────────────────────────────────────────────────────
@@ -56,28 +133,20 @@ def main(verbose: bool) -> None:
 
 @main.command()
 @click.argument("input_fasta", type=click.Path(exists=True))
-@click.option("-o", "--output", "output_report", type=click.Path(), default=None,
-              help="Output HTML report path (default: <name>_report.html next to FASTA).")
 @click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
               help="Pipeline YAML config (default: configs/full_pipeline.yaml).")
-def run(input_fasta: str, output_report: str | None, config_path: str | None) -> None:
+def run(input_fasta: str, config_path: str | None) -> None:
     """Run the full optimization pipeline.
 
     \b
-    Usage:  protopt run proteins/my_protein.fasta
-            protopt run proteins/my_protein.fasta -o my_report.html
-            protopt run proteins/my_protein.fasta -c configs/custom.yaml
+    Usage:  protopt run my_protein.fasta
+            protopt run my_protein.fasta -c configs/custom.yaml
+
+    Results are saved in <name>_results/ and the report as
+    <name>_report.html, both next to the input FASTA.
     """
-    fasta_path = Path(input_fasta).resolve()
-    protein_name = fasta_path.stem
-
-    # Resolve output dir: <fasta_dir>/<name>_results/
-    output_dir = fasta_path.parent / f"{protein_name}_results"
+    fasta_path, output_dir, report_path = _resolve_paths(input_fasta)
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Resolve report path
-    if output_report is None:
-        output_report = str(fasta_path.parent / f"{protein_name}_report.html")
 
     # Default config
     if config_path is None:
@@ -87,16 +156,57 @@ def run(input_fasta: str, output_report: str | None, config_path: str | None) ->
             config_path = str(default_cfg)
 
     config = load_config(config_path)
-
-    # Override output_dir in config to match our resolved path
     config.setdefault("global", {})["output_dir"] = str(output_dir)
 
     pipeline = Pipeline(config)
     result = pipeline.run(str(fasta_path), str(output_dir))
 
     console.print(f"\n[bold green]✓ Pipeline complete.[/] {len(result.candidates)} candidates.")
-    console.print(f"  Results: {output_dir}/")
-    console.print(f"  Report:  {output_report}")
+    console.print(f"  Results: {output_dir}")
+    console.print(f"  Report:  {report_path}")
+
+
+# ── Generate / regenerate report ─────────────────────────────────────────
+
+
+@main.command()
+@click.argument("input_fasta", type=click.Path(exists=True))
+@click.option("--pdb", "pdb_path", type=click.Path(exists=True), default=None,
+              help="PDB file for 3D viewer (auto-detected if omitted).")
+def report(input_fasta: str, pdb_path: str | None) -> None:
+    """Generate (or regenerate) the HTML report.
+
+    \b
+    Usage:  protopt report my_protein.fasta
+
+    Reads results from <name>_results/ next to the FASTA and writes
+    <name>_report.html in the same directory.
+    """
+    from protein_optimizer.reporting.report_v2 import generate_report_v2
+
+    fasta_path, results_dir, report_path = _resolve_paths(input_fasta)
+
+    if not results_dir.is_dir():
+        console.print(f"[bold red]Results directory not found: {results_dir}[/]")
+        return
+
+    results = _load_results(results_dir)
+    if not results:
+        console.print(f"[bold red]No valid result files in {results_dir}[/]")
+        return
+
+    if pdb_path is None:
+        pdb_path = _auto_detect_pdb(results_dir, results)
+        if pdb_path:
+            console.print(f"  Auto-detected PDB: {pdb_path}")
+
+    generate_report_v2(
+        results=results,
+        output_path=report_path,
+        pdb_path=pdb_path,
+        title=_derive_title(results),
+    )
+    console.print(f"[bold green]✓ Report generated: {report_path}[/]")
 
 
 # ── List steps ───────────────────────────────────────────────────────────
@@ -118,17 +228,14 @@ def list_steps_cmd() -> None:
     for name in sorted(steps, key=lambda n: (steps[n].tier, n)):
         cls = steps[name]
         table.add_row(
-            name,
-            str(cls.tier),
-            cls.title,
-            cls.description,
+            name, str(cls.tier), cls.title, cls.description,
             ", ".join(cls.requires) if cls.requires else "—",
         )
 
     console.print(table)
 
 
-# ── Generic single-step runner ────────────────────────────────────────────
+# ── Single-step runner ───────────────────────────────────────────────────
 
 
 @main.command(
@@ -140,16 +247,14 @@ def list_steps_cmd() -> None:
 @click.option("-o", "--output", "output_path", type=click.Path(), default=None,
               help="Output StepResult JSON path.")
 @click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
-              help="Pipeline config YAML (step-specific section will be used).")
-@click.option("--protected-residues", type=str, default=None,
-              help="Comma-separated 1-based residue positions to protect from mutation.")
+              help="Pipeline config YAML.")
 @click.pass_context
 def step(ctx: click.Context, step_name: str, input_path: str,
-         output_path: str | None, config_path: str | None,
-         protected_residues: str | None) -> None:
+         output_path: str | None, config_path: str | None) -> None:
     """Run a single pipeline step by name.
 
-    Usage: protein-opt step <step-name> -i input.fasta -o output.json
+    \b
+    Usage: protopt step cysteine_scan -i my_protein.fasta
     """
     _import_all_steps()
 
@@ -158,18 +263,11 @@ def step(ctx: click.Context, step_name: str, input_path: str,
     step_config["_global"] = config.get("global", {})
     step_config["_prior_results"] = {}
 
-    # Override protected residues from CLI
-    if protected_residues:
-        step_config["_global"]["protected_residues"] = [
-            int(x.strip()) for x in protected_residues.split(",") if x.strip()
-        ]
-
     # Parse extra args as key=value config overrides
     for arg in ctx.args:
         if "=" in arg:
             key, value = arg.split("=", 1)
             key = key.lstrip("-")
-            # Try to parse as number/bool
             try:
                 value = int(value)
             except ValueError:
@@ -186,7 +284,6 @@ def step(ctx: click.Context, step_name: str, input_path: str,
     step_input = load_input(input_path)
     result = step_obj.execute(step_input, step_config)
 
-    # Determine output path
     if output_path is None:
         output_path = f"{step_name}_result.json"
 
@@ -195,7 +292,7 @@ def step(ctx: click.Context, step_name: str, input_path: str,
                   f"{len(result.candidates)} candidates → {output_path}")
 
 
-# ── Rank candidates ──────────────────────────────────────────────────────
+# ── Rank candidates ─────────────────────────────────────────────────────
 
 
 @main.command()
@@ -204,7 +301,7 @@ def step(ctx: click.Context, step_name: str, input_path: str,
 @click.option("-o", "--output", "output_path", type=click.Path(), default=None,
               help="Output ranked JSON.")
 @click.option("-s", "--score", "score_key", default=None,
-              help="Score key to rank by (default: auto-detect).")
+              help="Score key to rank by (default: composite_score).")
 @click.option("-n", "--top", "top_n", default=20, type=int,
               help="Number of top candidates to show.")
 def rank(input_path: str, output_path: str | None, score_key: str | None, top_n: int) -> None:
@@ -225,8 +322,7 @@ def rank(input_path: str, output_path: str | None, score_key: str | None, top_n:
 
     for i, c in enumerate(ranked, 1):
         mut_str = ", ".join(m.label for m in c.mutations) if c.mutations else "—"
-        score_val = f"{c.scores.get(key, 0):.4f}"
-        table.add_row(str(i), c.name, mut_str, score_val)
+        table.add_row(str(i), c.name, mut_str, f"{c.scores.get(key, 0):.4f}")
 
     console.print(table)
 
@@ -234,31 +330,3 @@ def rank(input_path: str, output_path: str | None, score_key: str | None, top_n:
         result.save(output_path)
         console.print(f"[bold green]✓ Saved ranked results to {output_path}[/]")
 
-
-# ── Generate report ──────────────────────────────────────────────────────
-
-
-@main.command()
-@click.option("-d", "--results-dir", type=click.Path(exists=True), required=True,
-              help="Directory containing step result JSON files.")
-@click.option("-o", "--output", "output_path", type=click.Path(), default="report.html",
-              help="Output HTML report path.")
-def report(results_dir: str, output_path: str) -> None:
-    """Generate an HTML report from pipeline results."""
-    from protein_optimizer.reporting.html_report import generate_html_report
-
-    results_path = Path(results_dir)
-    results = {}
-    for json_file in sorted(results_path.glob("*.json")):
-        try:
-            sr = StepResult.load(json_file)
-            results[sr.step_name] = sr
-        except Exception:
-            pass
-
-    if not results:
-        console.print("[bold red]No valid result files found.[/]")
-        return
-
-    generate_html_report(results=results, output_path=output_path)
-    console.print(f"[bold green]✓ Report generated: {output_path}[/]")
