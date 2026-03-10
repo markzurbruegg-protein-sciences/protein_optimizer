@@ -100,19 +100,27 @@ def _derive_title(results: dict[str, StepResult]) -> str:
     return "Protein Optimization Report"
 
 
+# Steps that require the --generative flag to be enabled
+_GENERATIVE_STEPS = {"rfdiffusion_diversify", "proteinmpnn_design", "design_validate"}
+
+
 @click.group(invoke_without_command=True)
 @click.option("-v", "--verbose", is_flag=True, help="Enable debug logging.")
 @click.option("-i", "--input", "input_fasta", type=click.Path(exists=True), default=None,
               metavar="FASTA", help="Input FASTA file — runs the full pipeline directly.")
 @click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
               metavar="YAML", help="Pipeline YAML config (default: configs/full_pipeline.yaml).")
+@click.option("--generative", is_flag=True, default=False,
+              help="Enable generative design steps (RFdiffusion + ProteinMPNN + validation).")
 @click.pass_context
-def main(ctx: click.Context, verbose: bool, input_fasta: str | None, config_path: str | None) -> None:
+def main(ctx: click.Context, verbose: bool, input_fasta: str | None,
+        config_path: str | None, generative: bool) -> None:
     """protopt — Modular protein optimization pipeline.
 
     \b
     Quick start (run full pipeline):
         protopt -i my_protein.fasta
+        protopt -i my_protein.fasta --generative
         protopt -i my_protein.fasta -c configs/custom.yaml
 
     \b
@@ -125,7 +133,7 @@ def main(ctx: click.Context, verbose: bool, input_fasta: str | None, config_path
     _setup_logging(verbose)
     # If -i was given and no subcommand, run the full pipeline immediately.
     if input_fasta is not None and ctx.invoked_subcommand is None:
-        ctx.invoke(run, input_fasta=input_fasta, config_path=config_path)
+        ctx.invoke(run, input_fasta=input_fasta, config_path=config_path, generative=generative)
 
 
 # ── Full pipeline ────────────────────────────────────────────────────────
@@ -135,11 +143,14 @@ def main(ctx: click.Context, verbose: bool, input_fasta: str | None, config_path
 @click.argument("input_fasta", type=click.Path(exists=True))
 @click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
               help="Pipeline YAML config (default: configs/full_pipeline.yaml).")
-def run(input_fasta: str, config_path: str | None) -> None:
+@click.option("--generative", is_flag=True, default=False,
+              help="Enable generative design steps (RFdiffusion + ProteinMPNN + validation).")
+def run(input_fasta: str, config_path: str | None, generative: bool) -> None:
     """Run the full optimization pipeline.
 
     \b
     Usage:  protopt run my_protein.fasta
+            protopt run my_protein.fasta --generative
             protopt run my_protein.fasta -c configs/custom.yaml
 
     Results are saved in <name>_results/ and the report as
@@ -157,6 +168,18 @@ def run(input_fasta: str, config_path: str | None) -> None:
 
     config = load_config(config_path)
     config.setdefault("global", {})["output_dir"] = str(output_dir)
+
+    # Remove generative steps unless --generative flag is set
+    if not generative:
+        steps = config.get("pipeline", {}).get("steps", [])
+        filtered = [s for s in steps if s not in _GENERATIVE_STEPS]
+        if len(filtered) < len(steps):
+            removed = [s for s in steps if s in _GENERATIVE_STEPS]
+            console.print(
+                f"[yellow]ℹ Skipping generative steps (pass --generative to enable): "
+                f"{', '.join(removed)}[/]"
+            )
+        config["pipeline"]["steps"] = filtered
 
     pipeline = Pipeline(config)
     result = pipeline.run(str(fasta_path), str(output_dir))

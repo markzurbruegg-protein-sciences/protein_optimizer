@@ -1335,14 +1335,21 @@ _TIER_SHORT_DESC: dict[int, str] = {
 }
 
 
+# PLM scoring steps are pure annotators — omit their stage cards from the
+# Step-by-Step Analysis (scores still appear in all candidate tables).
+_PLM_STEPS = {"esm1v_score", "esmif1_score", "e1_score"}
+
+
 def _step_details_section(results: dict[str, StepResult]) -> str:
     """Build the full step-by-step analysis with per-step collapsible cards."""
     if not results:
         return ""
 
-    # Group steps by tier
+    # Group steps by tier, skipping PLM-only scoring steps
     tier_steps: dict[int, list[str]] = {}
     for step_name in results:
+        if step_name in _PLM_STEPS:
+            continue
         tier = _TIER_MAP.get(step_name, 0)
         tier_steps.setdefault(tier, []).append(step_name)
 

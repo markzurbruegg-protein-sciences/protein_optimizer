@@ -127,6 +127,87 @@ class ProteinMPNNDesignStep(BaseStep):
                 )
                 candidates.append(variant)
 
+        # ── RFdiffusion backbone designs ──────────────────────────────────────
+        # ProteinMPNN is used to design sequences on top of new RFdiffusion
+        # backbones.  Those variants carry needs_sequence_design=True and store
+        # the diffused backbone PDB path in metadata["rfdiffusion_output"].
+        prior = config.get("_prior_results", {})
+        rfdiff_result = prior.get("rfdiffusion_diversify")
+        rfdiff_candidates: list[ProteinCandidate] = []
+        if rfdiff_result is not None and hasattr(rfdiff_result, "candidates"):
+            rfdiff_candidates = rfdiff_result.candidates
+        # Also scan step_input itself in case rfdiffusion ran just before this step
+        for c in step_input.candidates:
+            if c.metadata.get("needs_sequence_design") and c not in rfdiff_candidates:
+                rfdiff_candidates.append(c)
+
+        # Find WT parent sequence for mutation comparison
+        wt_seq: str = ""
+        for c in step_input.candidates:
+            if c.parent_id is None:
+                wt_seq = c.sequence
+                break
+
+        for backbone in rfdiff_candidates:
+            if not backbone.metadata.get("needs_sequence_design"):
+                continue
+
+            pdb_path = backbone.metadata.get("rfdiffusion_output", "")
+            if not pdb_path or not Path(pdb_path).exists():
+                warnings.append(f"{backbone.name}: RFdiffusion PDB not found ({pdb_path}).")
+                continue
+
+            # No fixed positions for backbone redesigns – allow full redesign
+            # (caller can still protect residues via protected_residues config)
+            fixed_positions = sorted(protected)
+
+            helper_input = {
+                "mpnn_dir": str(mpnn_dir),
+                "pdb_path": str(pdb_path),
+                "use_soluble": use_soluble,
+                "omit_aas": omit_aas,
+                "sampling_temp": sampling_temp,
+                "num_sequences": num_sequences,
+                "fixed_positions": fixed_positions,
+            }
+
+            designed_seqs = _run_subprocess(helper_input, conda_env)
+            if not designed_seqs:
+                warnings.append(f"{backbone.name}: ProteinMPNN produced no sequences for RFdiffusion backbone.")
+                continue
+
+            logger.info(
+                f"{backbone.name}: ProteinMPNN designed {len(designed_seqs)} "
+                "sequences on RFdiffusion backbone"
+            )
+
+            ref_seq = wt_seq or backbone.sequence
+            # Parent for MPNN designs is the WT (backbone's parent), so that
+            # combine_variants can discover them as direct children of WT.
+            effective_parent_id = backbone.parent_id or backbone.candidate_id
+            for i, entry in enumerate(designed_seqs):
+                seq = entry["sequence"]
+                score = entry.get("score", 0.0)
+                recovery = entry.get("recovery", 0.0)
+
+                mutations = _find_mutations(ref_seq, seq, self.name)
+
+                variant = ProteinCandidate(
+                    sequence=seq,
+                    name=f"{backbone.name}_mpnn_{i + 1}",
+                    parent_id=effective_parent_id,
+                    mutations=mutations,
+                )
+                variant.scores["mpnn_score"] = score
+                variant.scores["mpnn_recovery"] = recovery
+                variant.metadata["design_method"] = (
+                    "SolubleMPNN" if use_soluble else "ProteinMPNN"
+                )
+                variant.metadata["backbone_source"] = "rfdiffusion"
+                variant.metadata["backbone_name"] = backbone.name
+                variant.metadata["backbone_pdb"] = str(pdb_path)
+                candidates.append(variant)
+
         return StepResult(
             step_name=self.name, candidates=candidates,
             config_used=config, warnings=warnings,

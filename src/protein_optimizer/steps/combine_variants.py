@@ -82,6 +82,9 @@ class CombineVariantsStep(BaseStep):
 
             for variant in parent_variants:
                 if not variant.mutations:
+                    # Pass through generative designs (e.g. RFdiffusion, ProteinMPNN)
+                    # that carry no explicit mutation list — treat them as multi-mutants.
+                    candidates.append(variant)
                     continue
 
                 source = variant.mutations[0].source_step if variant.mutations else ""
