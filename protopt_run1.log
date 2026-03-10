@@ -1,0 +1,5 @@
+nohup: ignoring input
+Usage: protopt [OPTIONS] COMMAND [ARGS]...
+Try 'protopt --help' for help.
+
+Error: Invalid value for '-i' / '--input': Path 'jcDRM.fasta' does not exist.

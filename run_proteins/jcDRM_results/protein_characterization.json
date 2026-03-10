@@ -1,6 +1,6 @@
 {
   "step_name": "protein_characterization",
-  "timestamp": "2026-03-10T17:21:38.871516+00:00",
+  "timestamp": "2026-03-10T17:44:02.581470+00:00",
   "config_used": {
     "_global": {
       "protected_residues": [],
@@ -16,7 +16,7 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM",
-      "candidate_id": "6f830a2347a1",
+      "candidate_id": "951323b0568b",
       "parent_id": null,
       "structure_path": null,
       "mutations": [],
@@ -830,10 +830,10 @@
           "aggregation_score": 0.0,
           "aggregation_regions": [],
           "aggregation_region_count": 0,
-          "protsolm_probability": 1.0,
-          "protsolm_label": "Soluble",
-          "protsolm_confidence": "high",
-          "protsolm_score_pct": 100.0,
+          "protsolm_probability": 0.4752,
+          "protsolm_label": "Insoluble",
+          "protsolm_confidence": "low",
+          "protsolm_score_pct": 47.5,
           "protsolm_method": "ESM2 + ProtSSN EGNN + feature fusion",
           "tango_scores": [
             0.538,
@@ -1294,18 +1294,18 @@
           "net_charge_7": 3.2,
           "solubility_score": 50.1,
           "solubility_class": "Borderline",
-          "solubility_ensemble": 67.1,
-          "solubility_ensemble_class": "Soluble",
-          "solubility_ensemble_confidence": "moderate",
+          "solubility_ensemble": 46.1,
+          "solubility_ensemble_class": "Borderline",
+          "solubility_ensemble_confidence": "high",
           "solubility_methods": {
             "wilkinson_harrison": {
               "score": 50.1,
               "label": "Borderline"
             },
             "protsolm": {
-              "score": 100.0,
-              "probability": 1.0,
-              "label": "Soluble",
+              "score": 47.5,
+              "probability": 0.4752,
+              "label": "Borderline",
               "method": "ESM2 + ProtSSN EGNN + feature fusion"
             },
             "swi": {
