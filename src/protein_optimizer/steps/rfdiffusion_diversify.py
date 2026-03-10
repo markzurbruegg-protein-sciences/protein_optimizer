@@ -1,17 +1,12 @@
 """Tier 5 — RFdiffusion Partial Diffusion / Diversification.
 
-Uses RFdiffusion to generate backbone-diversified variants of the input
+Uses RFdiffusion2 to generate backbone-diversified variants of the input
 protein via partial diffusion.  The input structure is noised for a small
 number of timesteps (partial_T) then denoised, producing similar but
 structurally distinct backbones.
 
-Usage:
-    protein-opt step rfdiffusion_diversify -i structure_result.json -o rfdiff_result.json
-
-Requirements:
-    RFdiffusion installation (SE3nv conda environment)
-    Set RFDIFFUSION_DIR environment variable or config rfdiffusion_dir.
-    Model weights downloaded from IPD.
+Dispatches to a conda environment (default: 'rfd3') where RFdiffusion2
+is installed.
 """
 
 from __future__ import annotations
@@ -27,10 +22,14 @@ from protein_optimizer.steps.base import BaseStep
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_RFDIFF_DIR = os.path.expanduser(
+    "~/library-design/rfdiffusion2-lib/RFdiffusion2"
+)
+
 
 class RFdiffusionDiversifyStep(BaseStep):
     name = "rfdiffusion_diversify"
-    tier = 5
+    tier = 4
     title = "RFdiffusion Diversify"
     description = "Generate structurally diverse variants via partial diffusion."
     requires = ["predict_structure"]
@@ -38,12 +37,12 @@ class RFdiffusionDiversifyStep(BaseStep):
     def run(self, step_input: StepResult, config: dict[str, Any]) -> StepResult:
         rfdiff_dir = config.get(
             "rfdiffusion_dir",
-            os.environ.get("RFDIFFUSION_DIR", ""),
+            os.environ.get("RFDIFFUSION_DIR", _DEFAULT_RFDIFF_DIR),
         )
         partial_T = config.get("partial_T", 15)
         total_T = config.get("T", 50)
         num_designs = config.get("num_designs", 5)
-        conda_env = config.get("conda_env", "SE3nv")
+        conda_env = config.get("conda_env", "rfd3")
 
         candidates: list[ProteinCandidate] = []
         warnings: list[str] = []
@@ -68,12 +67,23 @@ class RFdiffusionDiversifyStep(BaseStep):
 
             pdb_path = parent.structure_path
             if not pdb_path or not Path(pdb_path).exists():
+                pdb_path = parent.metadata.get("structure_path", "")
+            if not pdb_path or not Path(pdb_path).exists():
+                prior = config.get("_prior_results", {})
+                ps = prior.get("predict_structure")
+                if ps and hasattr(ps, "candidates"):
+                    for pc in ps.candidates:
+                        sp = getattr(pc, "structure_path", "") or pc.metadata.get("structure_path", "")
+                        if sp and Path(sp).exists():
+                            pdb_path = sp
+                            break
+            if not pdb_path or not Path(pdb_path).exists():
                 warnings.append(f"{parent.name}: No structure for RFdiffusion.")
                 continue
 
             output_pdbs = _run_rfdiffusion(
                 rfdiff_dir=rfdiff_dir,
-                pdb_path=pdb_path,
+                pdb_path=str(pdb_path),
                 partial_T=partial_T,
                 total_T=total_T,
                 num_designs=num_designs,
@@ -91,8 +101,8 @@ class RFdiffusionDiversifyStep(BaseStep):
 
             for i, out_pdb in enumerate(output_pdbs):
                 variant = ProteinCandidate(
-                    sequence=parent.sequence,  # backbone only, seq TBD
-                    name=f"{parent.name}_rfdiff_{i+1}",
+                    sequence=parent.sequence,
+                    name=f"{parent.name}_rfdiff_{i + 1}",
                     parent_id=parent.candidate_id,
                     structure_path=str(out_pdb),
                 )
@@ -118,17 +128,19 @@ def _run_rfdiffusion(
     conda_env: str,
     protein_name: str,
 ) -> list[Path]:
-    """Run RFdiffusion partial diffusion.
-
-    Returns list of output PDB paths.
-    """
     rfdiff_path = Path(rfdiff_dir)
-    script = rfdiff_path / "scripts" / "run_inference.py"
+    script = rfdiff_path / "rf_diffusion" / "run_inference.py"
     if not script.exists():
-        logger.error(f"run_inference.py not found in {rfdiff_dir}/scripts/")
+        logger.error(f"run_inference.py not found at {script}")
         return []
 
     output_prefix = Path(pdb_path).parent / f"{protein_name}_rfdiff"
+    ckpt_path = rfdiff_path / "rf_diffusion" / "model_weights" / "RFD_140.pt"
+    if not ckpt_path.exists():
+        ckpt_path = rfdiff_path / "rf_diffusion" / "model_weights" / "RFD_173.pt"
+    if not ckpt_path.exists():
+        logger.error(f"No model weights found in {rfdiff_path / 'rf_diffusion' / 'model_weights'}")
+        return []
 
     seq_len = _get_pdb_length(pdb_path)
     contig = f"A1-{seq_len}" if seq_len else "A1-999"
@@ -139,15 +151,23 @@ def _run_rfdiffusion(
         f"inference.input_pdb={pdb_path}",
         f"inference.output_prefix={output_prefix}",
         f"inference.num_designs={num_designs}",
+        f"inference.ckpt_path={ckpt_path}",
         f"diffuser.partial_T={partial_T}",
         f"diffuser.T={total_T}",
         f"contigmap.contigs=[{contig}]",
     ]
 
+    # RFdiffusion2 expects its repo root on PYTHONPATH for internal imports
+    env = os.environ.copy()
+    python_path = str(rfdiff_path)
+    if "PYTHONPATH" in env:
+        python_path = python_path + os.pathsep + env["PYTHONPATH"]
+    env["PYTHONPATH"] = python_path
+
     try:
         logger.info(f"Running RFdiffusion (partial_T={partial_T}, T={total_T})...")
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=1800,
+            cmd, capture_output=True, text=True, timeout=1800, env=env,
         )
         if result.returncode != 0:
             logger.error(f"RFdiffusion failed:\n{result.stderr[:500]}")
@@ -159,16 +179,18 @@ def _run_rfdiffusion(
         logger.error("conda not found — ensure RFdiffusion environment is set up")
         return []
 
-    # Collect output PDBs
     output_pdbs = sorted(
         Path(pdb_path).parent.glob(f"{protein_name}_rfdiff_*.pdb")
     )
-
+    # RFdiffusion2 appends suffixes like '-atomized-bb-False' to output names
+    if not output_pdbs:
+        output_pdbs = sorted(
+            Path(pdb_path).parent.glob(f"{protein_name}_rfdiff*-*.pdb")
+        )
     return output_pdbs
 
 
 def _get_pdb_length(pdb_path: str) -> int | None:
-    """Get number of residues from PDB file."""
     try:
         from Bio.PDB import PDBParser
         parser = PDBParser(QUIET=True)

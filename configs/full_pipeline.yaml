@@ -1,27 +1,32 @@
 # Full pipeline configuration for jcDRM protein optimization
-# Runs all available tiers (1-4) + combine_variants
-# Skipped: stability_ddg (no PyRosetta/FoldX), e1_score (model not available),
-#           proteinmpnn_design (not installed), esmif1_score (module not available),
-#           rfdiffusion_diversify, design_validate, motif_scaffold (Tier 5 deps missing)
+# Generate-then-score architecture: all candidate generation first,
+# PLM scoring at the end for unbiased evaluation.
 
 pipeline:
   steps:
-    # ── Tier 1: Sequence-based heuristics ──
+    # ── Stage 1: Sequence Analysis ──
     - cysteine_scan
     - motif_scan
     - sequence_complexity
-    # ── Tier 2: Evolutionary analysis ──
+    # ── Stage 2: Evolutionary Analysis ──
     - find_homologs
     - consensus_design
     - pssm_analysis
-    # ── Tier 3: Structure-based engineering ──
+    # ── Stage 3: Structure Prediction & Engineering ──
     - predict_structure
+    - stability_ddg
     - disulfide_design
     - cavity_fill
     - surface_patch
-    # ── Tier 4: AI/ML scoring ──
-    - esm1v_score
+    # ── Stage 4: Generative Design & Combination ──
+    - rfdiffusion_diversify
+    - proteinmpnn_design
+    - design_validate
     - combine_variants
+    # ── Stage 5: PLM Scoring (final evaluation) ──
+    # - esm1v_score
+    # - esmif1_score
+    - e1_score
 
 global:
   protected_residues: []
@@ -53,13 +58,13 @@ find_homologs:
   e_value: 1.0e-5
 
 consensus_design:
-  min_conservation: 0.4
-  max_mutations: 10
+  min_conservation: 0.3
+  max_mutations: 20
 
 pssm_analysis:
-  pseudocount: 1
-  threshold: 1.0
-  max_mutations: 10
+  pseudocount: 0.5
+  threshold: 1.5
+  max_mutations: 30
 
 # ──────────────────────────── Tier 3 ────────────────────────────
 predict_structure:
@@ -67,19 +72,28 @@ predict_structure:
   conda_env: boltz2-env
   use_msa_server: true
 
+stability_ddg:
+  method: thermompnn
+  conda_env: protopt
+  thermompnn_dir: /home/markzurbruegg/ThermoMPNN
+  model_weights: /home/markzurbruegg/ThermoMPNN/models/thermoMPNN_default.pt
+  ddg_threshold: -0.5
+  saturation_mutagenesis: true
+  chain: A
+
 disulfide_design:
   cb_distance_min: 3.5
   cb_distance_max: 4.5
-  max_candidates: 10
+  max_candidates: 15
 
 cavity_fill:
-  min_volume: 20.0
-  max_mutations: 10
+  min_volume: 15.0
+  max_mutations: 15
 
 surface_patch:
-  sasa_threshold: 0.25
+  sasa_threshold: 0.20
   patch_min_size: 3
-  max_mutations: 10
+  max_mutations: 15
 
 # ──────────────────────────── Tier 4 ────────────────────────────
 esm1v_score:
@@ -88,22 +102,66 @@ esm1v_score:
   score_existing: true
   site_saturation: false
 
+esmif1_score:
+  conda_env: protopt
+  chain_id: A
+
+e1_score:
+  conda_env: e1
+  model: Profluent-Bio/E1-600m
+  retrieval_augmented: true
+  max_homologs_context: 8
+  site_saturation: false
+  top_k_positions: 5
+
+rfdiffusion_diversify:
+  conda_env: rfd3
+  rfdiffusion_dir: /home/markzurbruegg/library-design/rfdiffusion2-lib/RFdiffusion2
+  partial_T: 15
+  T: 50
+  num_designs: 5
+
+proteinmpnn_design:
+  conda_env: protopt
+  proteinmpnn_dir: /home/markzurbruegg/ProteinMPNN
+  use_soluble_model: true
+  omit_aas: "C"
+  sampling_temp: 0.1
+  num_sequences: 8
+  redesign_mode: all
+
+design_validate:
+  mpnn_conda_env: protopt
+  boltz_conda_env: boltz2-env
+  min_plddt: 70.0
+  max_rmsd: 2.0
+  mpnn:
+    proteinmpnn_dir: /home/markzurbruegg/ProteinMPNN
+    use_soluble_model: true
+    omit_aas: "C"
+    sampling_temp: 0.1
+    num_sequences: 4
+  boltz: {}
+
 combine_variants:
-  max_single_mutations: 20
+  max_single_mutations: 25
   max_combination_order: 3
-  max_library_size: 200
+  max_library_size: 300
+  ranking_score: null  # auto-detect best available (ddg, pssm, consensus)
   min_score_threshold: -999.0  # don't filter by score; use ranking instead
 
 # ──────────────────────────── Scoring ────────────────────────────
 scoring:
   weights:
-    esm1v_delta: 0.30
-    consensus_conservation: 0.20
-    pssm_log_odds: 0.20
-    disulfide_cb_distance: 0.10
-    cavity_burial: 0.10
+    e1_fitness: 0.25
+    ddg: 0.20
+    consensus_conservation: 0.15
+    pssm_log_odds: 0.15
+    disulfide_cb_distance: 0.05
+    cavity_burial: 0.05
     surface_sap: 0.05
     combo_mean: 0.05
+    mpnn_score: 0.05
 
   filters:
     max_mutations: 15

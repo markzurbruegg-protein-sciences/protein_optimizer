@@ -1,16 +1,10 @@
 """Tier 5 — Motif Scaffolding.
 
-Uses RFdiffusion motif scaffolding to graft key functional motifs
-(active sites, binding regions) into de novo backbones.  Useful for
-creating entirely new scaffold proteins that preserve essential
-catalytic residues.
+Uses RFdiffusion2 motif scaffolding to graft key functional motifs
+(active sites, binding regions) into de novo backbones.
 
-Usage:
-    protein-opt step motif_scaffold -i structure_result.json -o motif_result.json
-
-Requirements:
-    RFdiffusion installation with SE3nv environment
-    Set RFDIFFUSION_DIR environment variable
+Dispatches to a conda environment (default: 'rfd3') where RFdiffusion2
+is installed.
 """
 
 from __future__ import annotations
@@ -27,6 +21,10 @@ from protein_optimizer.steps.base import BaseStep
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_RFDIFF_DIR = os.path.expanduser(
+    "~/library-design/rfdiffusion2-lib/RFdiffusion2"
+)
+
 
 class MotifScaffoldStep(BaseStep):
     name = "motif_scaffold"
@@ -38,12 +36,12 @@ class MotifScaffoldStep(BaseStep):
     def run(self, step_input: StepResult, config: dict[str, Any]) -> StepResult:
         rfdiff_dir = config.get(
             "rfdiffusion_dir",
-            os.environ.get("RFDIFFUSION_DIR", ""),
+            os.environ.get("RFDIFFUSION_DIR", _DEFAULT_RFDIFF_DIR),
         )
         motif_residues = config.get("motif_residues", [])
         scaffold_length = config.get("scaffold_length", [80, 120])
         num_designs = config.get("num_designs", 5)
-        conda_env = config.get("conda_env", "SE3nv")
+        conda_env = config.get("conda_env", "rfd3")
 
         protected = parse_protected_residues(
             config.get("_global", {}).get("protected_residues")
@@ -72,12 +70,21 @@ class MotifScaffoldStep(BaseStep):
 
             pdb_path = parent.structure_path
             if not pdb_path or not Path(pdb_path).exists():
+                pdb_path = parent.metadata.get("structure_path", "")
+            if not pdb_path or not Path(pdb_path).exists():
+                prior = config.get("_prior_results", {})
+                ps = prior.get("predict_structure")
+                if ps and hasattr(ps, "candidates"):
+                    for pc in ps.candidates:
+                        sp = getattr(pc, "structure_path", "") or pc.metadata.get("structure_path", "")
+                        if sp and Path(sp).exists():
+                            pdb_path = sp
+                            break
+            if not pdb_path or not Path(pdb_path).exists():
                 warnings.append(f"{parent.name}: No structure for motif scaffolding.")
                 continue
 
-            # Determine motif residues
             if not motif_residues:
-                # Auto-detect from protected residues + catalytic annotations
                 motif_residues = _auto_detect_motif(parent, protected)
 
             if not motif_residues:
@@ -87,14 +94,13 @@ class MotifScaffoldStep(BaseStep):
                 )
                 continue
 
-            # Build contig string for motif scaffolding
             contig_str = _build_motif_contig(
                 motif_residues, parent.sequence, scaffold_length
             )
 
             output_pdbs = _run_motif_scaffolding(
                 rfdiff_dir=rfdiff_dir,
-                pdb_path=pdb_path,
+                pdb_path=str(pdb_path),
                 contig_str=contig_str,
                 num_designs=num_designs,
                 conda_env=conda_env,
@@ -111,8 +117,8 @@ class MotifScaffoldStep(BaseStep):
 
             for i, out_pdb in enumerate(output_pdbs):
                 variant = ProteinCandidate(
-                    sequence=parent.sequence,  # placeholder until MPNN redesign
-                    name=f"{parent.name}_scaffold_{i+1}",
+                    sequence=parent.sequence,
+                    name=f"{parent.name}_scaffold_{i + 1}",
                     parent_id=parent.candidate_id,
                     structure_path=str(out_pdb),
                 )
@@ -122,27 +128,19 @@ class MotifScaffoldStep(BaseStep):
                 candidates.append(variant)
 
         return StepResult(
-            step_name=self.name,
-            candidates=candidates,
-            config_used=config,
-            warnings=warnings,
+            step_name=self.name, candidates=candidates,
+            config_used=config, warnings=warnings,
         )
 
 
 def _auto_detect_motif(
     parent: ProteinCandidate, protected: set[int]
 ) -> list[int]:
-    """Auto-detect motif residues from protected positions and metadata."""
     motif = set(protected)
-
-    # Add catalytic residues if annotated
     if "catalytic_residues" in parent.metadata:
         motif.update(parent.metadata["catalytic_residues"])
-
-    # Add binding site residues
     if "binding_residues" in parent.metadata:
         motif.update(parent.metadata["binding_residues"])
-
     return sorted(motif)
 
 
@@ -151,20 +149,12 @@ def _build_motif_contig(
     sequence: str,
     scaffold_length: list[int],
 ) -> str:
-    """Build RFdiffusion contig map string for motif scaffolding.
-
-    Format: [Xmin-Xmax/A10-A15/Xmin-Xmax/A20-A22/Xmin-Xmax]
-
-    Where X segments are de novo scaffold regions and A segments are
-    motif residues to preserve.
-    """
     if not motif_residues:
         return f"[{scaffold_length[0]}-{scaffold_length[1]}]"
 
     sorted_motif = sorted(motif_residues)
-    seq_len = len(sequence)
 
-    # Group consecutive motif residues into segments
+    # Group consecutive residues into segments
     segments = []
     current_start = sorted_motif[0]
     current_end = sorted_motif[0]
@@ -178,20 +168,15 @@ def _build_motif_contig(
             current_end = r
     segments.append((current_start, current_end))
 
-    # Build contig with scaffold gaps between motif segments
     min_gap = 5
     max_gap = 25
 
     parts = []
-    # N-terminal scaffold
     parts.append(f"{min_gap}-{max_gap}")
-
     for i, (start, end) in enumerate(segments):
         parts.append(f"A{start}-{end}")
         if i < len(segments) - 1:
             parts.append(f"{min_gap}-{max_gap}")
-
-    # C-terminal scaffold
     parts.append(f"{min_gap}-{max_gap}")
 
     return "[" + "/".join(parts) + "]"
@@ -205,11 +190,10 @@ def _run_motif_scaffolding(
     conda_env: str,
     protein_name: str,
 ) -> list[Path]:
-    """Run RFdiffusion motif scaffolding."""
     rfdiff_path = Path(rfdiff_dir)
-    script = rfdiff_path / "scripts" / "run_inference.py"
+    script = rfdiff_path / "rf_diffusion" / "run_inference.py"
     if not script.exists():
-        logger.error(f"run_inference.py not found in {rfdiff_dir}/scripts/")
+        logger.error(f"run_inference.py not found at {script}")
         return []
 
     output_prefix = Path(pdb_path).parent / f"{protein_name}_scaffold"
@@ -225,7 +209,7 @@ def _run_motif_scaffolding(
     ]
 
     try:
-        logger.info(f"Running RFdiffusion motif scaffolding...")
+        logger.info("Running RFdiffusion motif scaffolding...")
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=3600,
         )
@@ -242,5 +226,4 @@ def _run_motif_scaffolding(
     output_pdbs = sorted(
         Path(pdb_path).parent.glob(f"{protein_name}_scaffold_*.pdb")
     )
-
     return output_pdbs

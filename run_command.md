@@ -1,0 +1,1 @@
+nohup conda run --no-capture-output -n protopt python -u -m protein_optimizer run run_proteins/jcDRM.fasta > run_proteins/pipeline_run.log 2>&1 &

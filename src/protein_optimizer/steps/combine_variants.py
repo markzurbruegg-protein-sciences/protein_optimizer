@@ -190,27 +190,34 @@ def _get_best_score(
 ) -> float:
     """Get the best available score for ranking.
 
-    Priority order if no preferred_score:
-    1. e1_fitness
-    2. esm1v_delta
-    3. esmif1_delta
-    4. mpnn_score
-    5. consensus_score
-    6. pssm_delta
-    7. Any available score
+    Priority tuned for pre-PLM ranking since PLMs score at the end.
+    Structural/evolutionary scores first, then PLMs if available.
+    
+    Note: ddg is inverted (more negative = better = higher rank).
     """
     if preferred_score and preferred_score in variant.scores:
-        return variant.scores[preferred_score]
+        val = variant.scores[preferred_score]
+        # Invert scores where lower is better
+        if preferred_score in ("ddg", "surface_sap"):
+            return -val
+        return val
 
+    # Priority tuned for pre-PLM ranking (PLMs score at end):
+    # structural scores first, then evolutionary, then PLM if available
     priority = [
+        "ddg", "pssm_log_odds", "consensus_conservation",
+        "mpnn_score", "cavity_burial", "disulfide_energy_estimate",
+        "surface_sap", "motif_risk_fixed", "cys_risk",
         "e1_fitness", "esm1v_delta", "esmif1_delta",
-        "mpnn_score", "consensus_score", "pssm_delta",
-        "cavity_burial", "surface_sap",
     ]
+
+    # Scores where lower = better (invert for ranking)
+    _INVERT = {"ddg", "surface_sap"}
 
     for key in priority:
         if key in variant.scores:
-            return variant.scores[key]
+            val = variant.scores[key]
+            return -val if key in _INVERT else val
 
     # Return any score
     if variant.scores:

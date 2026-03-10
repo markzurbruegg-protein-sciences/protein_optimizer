@@ -1,17 +1,18 @@
-"""Tier 3 — Stability ΔΔG Predictions.
+"""Tier 3 — Stability ΔΔG Predictions via ThermoMPNN.
 
-Uses Rosetta cartesian_ddg or FoldX BuildModel to computationally score
-mutations for stability effects. Negative ΔΔG = stabilizing.
+Uses ThermoMPNN (Kuhlman Lab) to predict ΔΔG of single-point mutations.
+ThermoMPNN is a transfer-learning model built on ProteinMPNN's structure
+encoder, fine-tuned on the Megascale thermostability dataset.
 
-Usage:
-    protein-opt step stability_ddg -i structure_result.json -o ddg_result.json
-    protein-opt step stability_ddg -i structure_result.json --method=foldx
+Negative ΔΔG = stabilizing mutation.
 
-Requires: PyRosetta (Rosetta) or FoldX binary.
+Dispatches computation to a conda environment (default: 'protopt') that
+has the required dependencies (torch, omegaconf, pytorch-lightning).
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import subprocess
 import tempfile
@@ -26,17 +27,23 @@ logger = logging.getLogger(__name__)
 
 AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
 
+# Path to the helper script (relative to package root)
+_HELPER_SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "thermompnn_helper.py"
+
 
 class StabilityDDGStep(BaseStep):
     name = "stability_ddg"
     tier = 3
     title = "Stability ΔΔG"
-    description = "Predict mutation stability effects with Rosetta or FoldX."
+    description = "Predict mutation stability effects with ThermoMPNN."
     requires = ["predict_structure"]
 
     def validate_input(self, step_input: StepResult) -> None:
         super().validate_input(step_input)
-        has_structure = any(c.structure_path for c in step_input.candidates)
+        has_structure = any(
+            c.structure_path or c.metadata.get("structure_path")
+            for c in step_input.candidates
+        )
         if not has_structure:
             raise ValueError(
                 "stability_ddg requires structure data. "
@@ -44,10 +51,18 @@ class StabilityDDGStep(BaseStep):
             )
 
     def run(self, step_input: StepResult, config: dict[str, Any]) -> StepResult:
-        method = config.get("method", "rosetta")
         ddg_threshold = config.get("ddg_threshold", -1.0)
         saturation = config.get("saturation_mutagenesis", False)
         target_positions = config.get("positions", [])
+        conda_env = config.get("conda_env", "protopt")
+        thermompnn_dir = config.get(
+            "thermompnn_dir", str(Path.home() / "ThermoMPNN")
+        )
+        model_weights = config.get(
+            "model_weights",
+            str(Path(thermompnn_dir) / "models" / "thermoMPNN_default.pt"),
+        )
+        chain = config.get("chain", "A")
         protected = parse_protected_residues(
             config.get("_global", {}).get("protected_residues")
         )
@@ -63,37 +78,45 @@ class StabilityDDGStep(BaseStep):
 
             pdb_path = parent.structure_path
             if not pdb_path or not Path(pdb_path).exists():
-                warnings.append(f"{parent.name}: No structure available, skipping ΔΔG.")
+                pdb_path = parent.metadata.get("structure_path", "")
+            if not pdb_path or not Path(pdb_path).exists():
+                warnings.append(
+                    f"{parent.name}: No structure available, skipping ΔΔG."
+                )
                 continue
 
-            # Determine positions to scan
             positions = _get_target_positions(
                 parent, target_positions, protected, saturation
             )
 
             if not positions:
-                warnings.append(f"{parent.name}: No positions to scan for ΔΔG.")
+                warnings.append(
+                    f"{parent.name}: No positions to scan for ΔΔG."
+                )
                 continue
 
             logger.info(
                 f"{parent.name}: Scanning {len(positions)} positions "
-                f"with {method}"
+                f"with ThermoMPNN"
             )
 
-            # Run ΔΔG predictions
-            if method == "rosetta":
-                ddg_results = _run_rosetta_ddg(pdb_path, parent.sequence, positions)
-            elif method == "foldx":
-                ddg_results = _run_foldx_ddg(pdb_path, parent.sequence, positions)
-            else:
-                warnings.append(f"Unknown ΔΔG method: {method}")
-                continue
+            ddg_results = _run_thermompnn(
+                pdb_path=pdb_path,
+                positions=positions,
+                conda_env=conda_env,
+                thermompnn_dir=thermompnn_dir,
+                model_weights=model_weights,
+                chain=chain,
+            )
 
             if not ddg_results:
-                warnings.append(f"{parent.name}: ΔΔG calculation returned no results.")
+                warnings.append(
+                    f"{parent.name}: ThermoMPNN returned no results. "
+                    f"Check that the '{conda_env}' conda env has torch, "
+                    f"omegaconf, pytorch-lightning installed."
+                )
                 continue
 
-            # Filter stabilizing mutations
             stabilizing = [
                 (pos, wt, mut_aa, ddg)
                 for pos, wt, mut_aa, ddg in ddg_results
@@ -102,32 +125,25 @@ class StabilityDDGStep(BaseStep):
 
             logger.info(
                 f"{parent.name}: {len(stabilizing)} stabilizing mutations "
-                f"(ΔΔG < {ddg_threshold})"
+                f"(ΔΔG < {ddg_threshold}) out of {len(ddg_results)} scored"
             )
 
-            # Create candidates for stabilizing mutations
             for pos, wt, mut_aa, ddg in stabilizing:
                 mut = Mutation(
-                    position=pos,
-                    wt=wt,
-                    mut=mut_aa,
-                    source_step=self.name,
-                    score=ddg,
-                    metadata={"ddg": ddg, "method": method},
+                    position=pos, wt=wt, mut=mut_aa,
+                    source_step=self.name, score=ddg,
+                    metadata={"ddg": ddg, "method": "thermompnn"},
                 )
                 try:
                     variant = parent.apply_mutation(mut)
                     variant.scores["ddg"] = ddg
-                    variant.scores["ddg_method"] = hash(method)  # for tracking
                     candidates.append(variant)
                 except ValueError as e:
                     logger.debug(f"Skipping {wt}{pos}{mut_aa}: {e}")
 
         return StepResult(
-            step_name=self.name,
-            candidates=candidates,
-            config_used=config,
-            warnings=warnings,
+            step_name=self.name, candidates=candidates,
+            config_used=config, warnings=warnings,
         )
 
 
@@ -137,162 +153,88 @@ def _get_target_positions(
     protected: set[int],
     saturation: bool,
 ) -> list[int]:
-    """Determine which positions to scan."""
+    """Determine which 1-based positions to scan."""
     if specified_positions:
-        positions = [p for p in specified_positions if p not in protected]
-    elif saturation:
-        positions = [
+        return [p for p in specified_positions if p not in protected]
+    if saturation:
+        return [
             i + 1 for i in range(len(parent.sequence))
             if (i + 1) not in protected
         ]
-    else:
-        # Use positions flagged by earlier steps (motif_scan, cysteine_scan)
-        flagged = set()
-        if "motif_hits" in parent.metadata:
-            for hit in parent.metadata["motif_hits"]:
-                flagged.add(hit.get("position", 0))
-        if "complexity_flags" in parent.metadata:
-            for flag in parent.metadata["complexity_flags"]:
-                flagged.add(flag.get("position", 0))
-        # Also include positions from any proposed mutations
-        for mut in parent.mutations:
-            flagged.add(mut.position)
-
-        positions = [p for p in flagged if p not in protected and 1 <= p <= len(parent.sequence)]
-        if not positions:
-            # Fall back to surface residues (heuristic: charged flanking)
-            positions = _estimate_surface_positions(parent.sequence, protected)
-
-    return sorted(positions)
+    # Default: scan all positions (full SSM) — ThermoMPNN is fast enough
+    return [
+        i + 1 for i in range(len(parent.sequence))
+        if (i + 1) not in protected
+    ]
 
 
-def _estimate_surface_positions(sequence: str, protected: set[int]) -> list[int]:
-    """Rough heuristic: positions with charged neighbors are likely surface."""
-    positions = []
-    charged = set("DEKRH")
-    for i, aa in enumerate(sequence):
-        pos = i + 1
-        if pos in protected:
-            continue
-        window = sequence[max(0, i - 2): min(len(sequence), i + 3)]
-        if sum(1 for c in window if c in charged) >= 2:
-            positions.append(pos)
-    return positions[:50]  # cap at 50 for performance
-
-
-def _run_rosetta_ddg(
-    pdb_path: str, sequence: str, positions: list[int]
+def _run_thermompnn(
+    pdb_path: str,
+    positions: list[int],
+    conda_env: str,
+    thermompnn_dir: str,
+    model_weights: str,
+    chain: str,
 ) -> list[tuple[int, str, str, float]]:
-    """Run Rosetta cartesian_ddg protocol.
-
-    Returns list of (position, wt_aa, mut_aa, ddg).
-    """
-    try:
-        import pyrosetta
-        from pyrosetta.rosetta.protocols.cartesian_ddg import CartesianddGMover
-
-        pyrosetta.init("-ignore_unrecognized_res -mute all")
-        pose = pyrosetta.pose_from_pdb(pdb_path)
-
-        results = []
-        for pos in positions:
-            if pos > len(sequence):
-                continue
-            wt_aa = sequence[pos - 1]
-            for mut_aa in AMINO_ACIDS:
-                if mut_aa == wt_aa:
-                    continue
-                try:
-                    # Simple ddG estimation using PyRosetta
-                    mutant_pose = pose.clone()
-                    # Apply mutation
-                    pyrosetta.toolbox.mutants.mutate_residue(
-                        mutant_pose, pos, mut_aa
-                    )
-                    # Score
-                    sfxn = pyrosetta.get_fa_scorefxn()
-                    wt_score = sfxn(pose)
-                    mut_score = sfxn(mutant_pose)
-                    ddg = mut_score - wt_score
-                    results.append((pos, wt_aa, mut_aa, ddg))
-                except Exception as e:
-                    logger.debug(f"Rosetta ddG failed for {wt_aa}{pos}{mut_aa}: {e}")
-
-        return results
-
-    except ImportError:
-        logger.error(
-            "PyRosetta not available. Install from: "
-            "https://www.pyrosetta.org/downloads"
-        )
-        return []
-
-
-def _run_foldx_ddg(
-    pdb_path: str, sequence: str, positions: list[int]
-) -> list[tuple[int, str, str, float]]:
-    """Run FoldX BuildModel for ΔΔG prediction.
-
-    Returns list of (position, wt_aa, mut_aa, ddg).
-    """
-    results = []
+    """Dispatch ThermoMPNN ΔΔG prediction to a conda env via subprocess."""
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+            in_path = Path(tmpdir) / "thermompnn_input.json"
+            out_path = Path(tmpdir) / "thermompnn_output.json"
 
-            # Create individual_list.txt for FoldX
-            mutations_file = tmpdir / "individual_list.txt"
-            mutation_lines = []
-            for pos in positions:
-                if pos > len(sequence):
-                    continue
-                wt_aa = sequence[pos - 1]
-                for mut_aa in AMINO_ACIDS:
-                    if mut_aa == wt_aa:
-                        continue
-                    # FoldX format: WTaa Chain Position MUTaa (e.g., "LA10V;")
-                    mutation_lines.append(f"{wt_aa}A{pos}{mut_aa};")
+            helper_input = {
+                "pdb_path": str(pdb_path),
+                "positions": positions,
+                "chain": chain,
+                "thermompnn_dir": thermompnn_dir,
+                "model_weights": model_weights,
+            }
 
-            with open(mutations_file, "w") as f:
-                for line in mutation_lines:
-                    f.write(line + "\n")
+            with open(in_path, "w") as f:
+                json.dump(helper_input, f)
 
-            # Run FoldX
+            helper = str(_HELPER_SCRIPT)
+            if not Path(helper).exists():
+                logger.error(f"ThermoMPNN helper script not found: {helper}")
+                return []
+
             cmd = [
-                "foldx", "--command=BuildModel",
-                f"--pdb={Path(pdb_path).name}",
-                f"--mutant-file={mutations_file}",
-                f"--output-dir={tmpdir}",
+                "conda", "run", "--no-capture-output", "-n", conda_env,
+                "python", helper,
+                str(in_path), str(out_path),
             ]
-            subprocess.run(
-                cmd, check=True, capture_output=True, text=True,
-                cwd=Path(pdb_path).parent, timeout=3600
+
+            logger.info(
+                f"Dispatching ThermoMPNN to conda env '{conda_env}' "
+                f"({len(positions)} positions)..."
             )
 
-            # Parse FoldX output
-            ddg_file = tmpdir / f"Dif_{Path(pdb_path).stem}.fxout"
-            if ddg_file.exists():
-                with open(ddg_file) as f:
-                    for i, line in enumerate(f):
-                        if line.startswith(("Pdb", "#")):
-                            continue
-                        parts = line.strip().split()
-                        if len(parts) >= 2:
-                            try:
-                                ddg = float(parts[1])
-                                # Map back to mutation
-                                if i - 1 < len(mutation_lines):
-                                    ml = mutation_lines[i - 1].rstrip(";")
-                                    wt_aa = ml[0]
-                                    mut_aa = ml[-1]
-                                    pos = int(ml[2:-1])
-                                    results.append((pos, wt_aa, mut_aa, ddg))
-                            except (ValueError, IndexError):
-                                pass
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=7200,
+            )
 
-    except FileNotFoundError:
-        logger.error("FoldX not found on PATH. Download from: https://foldxsuite.crg.eu/")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"FoldX failed: {e}")
+            if result.returncode != 0:
+                logger.error(
+                    f"ThermoMPNN helper failed:\n{result.stderr[:2000]}"
+                )
+                return []
 
-    return results
+            if not out_path.exists():
+                logger.error("ThermoMPNN helper produced no output file")
+                return []
+
+            with open(out_path) as f:
+                output = json.load(f)
+
+            predictions = output.get("predictions", [])
+            return [
+                (p["position"], p["wt"], p["mut"], p["ddg"])
+                for p in predictions
+            ]
+
+    except subprocess.TimeoutExpired:
+        logger.error("ThermoMPNN scoring timed out after 7200s")
+        return []
+    except Exception as e:
+        logger.error(f"ThermoMPNN subprocess dispatch failed: {e}")
+        return []

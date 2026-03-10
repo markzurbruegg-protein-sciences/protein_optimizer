@@ -34,7 +34,7 @@ _HELPER_SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "esm1v_helper
 
 class ESM1vScoreStep(BaseStep):
     name = "esm1v_score"
-    tier = 4
+    tier = 5
     title = "ESM-1v Ensemble Scoring"
     description = "5-model ensemble variant effect prediction with ESM-1v."
     requires = []
