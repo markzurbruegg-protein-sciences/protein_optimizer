@@ -324,11 +324,12 @@ def _compute_metrics(
         "ph_stable_range": char.get("ph_stable_range", []),
         "aggregation_regions": char.get("aggregation_regions", []),
         "aggregation_region_count": char.get("aggregation_region_count", 0),
-        # CamSol intrinsic profile data
-        "camsol_scores": char.get("camsol_scores", []),
-        "camsol_overall": char.get("camsol_overall", 0),
-        "camsol_patches": char.get("camsol_patches", []),
-        "camsol_patch_count": char.get("camsol_patch_count", 0),
+        # ProtSolM deep-learning solubility data
+        "protsolm_probability": char.get("protsolm_probability", 0.5),
+        "protsolm_label": char.get("protsolm_label", "Unknown"),
+        "protsolm_confidence": char.get("protsolm_confidence", ""),
+        "protsolm_score_pct": char.get("protsolm_score_pct", 50.0),
+        "protsolm_method": char.get("protsolm_method", ""),
         # TANGO-like β-aggregation data
         "tango_scores": char.get("tango_scores", []),
         "tango_aprs": char.get("tango_aprs", []),
@@ -1280,23 +1281,19 @@ def _char_solubility_metric(m: dict, _metric) -> str:
     return f'      {_metric("Solubility (W-H)", f"{score:.0f}% ({label})", sol_css)}'
 
 
-def _char_camsol_metric(m: dict, _metric) -> str:
-    """Render CamSol intrinsic solubility metrics."""
-    overall = m.get("camsol_overall", 0)
-    patch_count = m.get("camsol_patch_count", 0)
-    camsol_scores = m.get("camsol_scores", [])
-    if not camsol_scores and not overall:
+def _char_protsolm_metric(m: dict, _metric) -> str:
+    """Render ProtSolM deep-learning solubility prediction metrics."""
+    prob = m.get("protsolm_probability", 0)
+    label = m.get("protsolm_label", "")
+    confidence = m.get("protsolm_confidence", "")
+    score_pct = m.get("protsolm_score_pct", 0)
+    if not label:
         return ""
-    cs_css = "good" if overall > 0 else "warn" if overall > -0.5 else "bad"
-    parts = [_metric("CamSol Score", f"{overall:+.3f}", cs_css)]
-    if patch_count > 0:
-        patches = m.get("camsol_patches", [])
-        locs = ", ".join(f"{p['start']}-{p['end']}" for p in patches[:3])
-        p_css = "warn" if patch_count <= 2 else "bad"
-        parts.append(_metric("CamSol Agg. Patches", f"{patch_count} ({locs})", p_css))
-    if camsol_scores:
-        sparkline = _camsol_sparkline(camsol_scores)
-        parts.append(f'<div class="metric-row"><span class="label">CamSol Profile</span>{sparkline}</div>')
+    ps_css = "good" if prob >= 0.6 else "warn" if prob >= 0.4 else "bad"
+    parts = [_metric("ProtSolM", f"{score_pct:.0f}% ({label})", ps_css)]
+    if confidence:
+        conf_css = "good" if confidence == "high" else "warn" if confidence == "moderate" else ""
+        parts.append(_metric("ProtSolM Confidence", confidence.title(), conf_css))
     return '\n      '.join(f'      {p}' for p in parts)
 
 
@@ -1309,18 +1306,57 @@ def _char_tango_metric(m: dict, _metric) -> str:
         return ""
     t_css = "good" if apr_count == 0 else "warn" if apr_count <= 3 else "bad"
     parts = [_metric("β-Agg. Regions", f"{apr_count} APR(s)", t_css)]
+
+    # Per-APR details with gatekeeper status
+    aprs = m.get("tango_aprs", [])
+    gk_list = m.get("tango_gatekeepers", [])
+    gk_by_apr: dict[str, dict] = {}
+    for g in gk_list:
+        key = f"{g['apr_start']}-{g['apr_end']}"
+        gk_by_apr[key] = g
+
+    for i, a in enumerate(aprs[:4]):
+        key = f"{a['start']}-{a['end']}"
+        gk_entry = gk_by_apr.get(key)
+        gk_status = ""
+        if gk_entry:
+            n_gk = sum(1 for g in gk_entry.get("gatekeepers", []) if g['side'] == 'N-terminal')
+            c_gk = sum(1 for g in gk_entry.get("gatekeepers", []) if g['side'] == 'C-terminal')
+            if gk_entry.get("protected"):
+                gk_status = " ✓"
+            elif n_gk + c_gk > 0:
+                gk_status = " △"
+            else:
+                gk_status = " ✗"
+        else:
+            gk_status = " ✗"
+        seq_short = a['sequence'][:10] + ("…" if len(a['sequence']) > 10 else "")
+        risk_css = "bad" if a.get('peak_score', 0) >= 0.8 else "warn" if a.get('peak_score', 0) >= 0.5 else "good"
+        parts.append(_metric(
+            f"APR-{i + 1} ({a['start']}–{a['end']})",
+            f"{seq_short} peak={a.get('peak_score', 0):.2f}{gk_status}",
+            risk_css))
+
     # Nucleation cores
     cores = m.get("tango_nucleation_cores", [])
     if cores:
         core_text = ", ".join(f"{c['sequence']}({c['start']}-{c['end']})" for c in cores[:3])
         parts.append(_metric("Nucleation Cores", core_text, "bad"))
-    # Gatekeeper analysis
-    gk = m.get("tango_gatekeepers", [])
-    if gk:
-        protected = sum(1 for g in gk if g.get("protected"))
-        total_gk = len(gk)
-        gk_css = "good" if protected == total_gk else "warn"
-        parts.append(_metric("Gatekeepers", f"{protected}/{total_gk} APRs protected", gk_css))
+
+    # Gatekeeper summary
+    if gk_list or aprs:
+        n_with_gk = len(gk_by_apr)
+        protected = sum(1 for g in gk_list if g.get("protected"))
+        total_aprs = apr_count
+        unprotected = total_aprs - protected
+        if unprotected > 0:
+            gk_css = "bad" if unprotected >= 3 else "warn"
+            parts.append(_metric("Gatekeeper Status",
+                                 f"{unprotected}/{total_aprs} APRs unprotected", gk_css))
+        else:
+            parts.append(_metric("Gatekeeper Status",
+                                 f"All {total_aprs} APRs protected", "good"))
+
     if tango_scores:
         sparkline = _aggregation_sparkline(tango_scores)
         parts.append(f'<div class="metric-row"><span class="label">β-Agg. Profile</span>{sparkline}</div>')
@@ -1339,7 +1375,7 @@ def _char_solubility_ensemble_metric(m: dict, _metric) -> str:
     parts = [_metric("Ensemble Solubility",
                       f"{ensemble_score:.0f}% ({ensemble_class}, {confidence} conf.)", e_css)]
     # Show individual method scores compactly
-    method_names = {"wilkinson_harrison": "W-H", "camsol": "CamSol", "swi": "SWI", "proso": "PROSO-like"}
+    method_names = {"wilkinson_harrison": "W-H", "protsolm": "ProtSolM", "swi": "SWI", "proso": "PROSO-like"}
     method_strs = []
     for key, display in method_names.items():
         if key in methods:
@@ -1594,7 +1630,7 @@ def _hero_section(
       {_metric("Hydrophobic Patches", f"{m.get('agg_patches', 0)}", agg_css)}
       {_metric("Surface Patches (SAP)", f"{m.get('n_surface_patches', 0)}", "")}
 {_char_aggregation_metric(m, _metric)}
-{_char_camsol_metric(m, _metric)}
+{_char_protsolm_metric(m, _metric)}
 {_char_tango_metric(m, _metric)}
 {_char_solubility_metric(m, _metric)}
 {_char_solubility_ensemble_metric(m, _metric)}

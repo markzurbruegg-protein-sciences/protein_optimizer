@@ -22,11 +22,14 @@ Property groups
 
 from __future__ import annotations
 
+import json
 import logging
 import math
+import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -224,12 +227,33 @@ class ProteinCharacterizationStep(BaseStep):
         char["aggregation_regions"] = apr["regions"]
         char["aggregation_region_count"] = apr["count"]
 
-        # CamSol intrinsic solubility profile (Sormanni et al., 2015)
-        camsol = _camsol_profile(seq)
-        char["camsol_scores"] = camsol["scores"]
-        char["camsol_overall"] = camsol["overall"]
-        char["camsol_patches"] = camsol["patches"]
-        char["camsol_patch_count"] = camsol["patch_count"]
+        # ProtSolM deep-learning solubility prediction (Tan et al., IEEE BIBM 2024)
+        # Uses ESM2 + ProtSSN EGNN + handcrafted features via external helper
+        pdb_path = parent.structure_path or parent.metadata.get("structure_path", "")
+        if not pdb_path:
+            # Auto-detect from results directory or other candidates
+            for cand in candidates:
+                sp = getattr(cand, "structure_path", "") or cand.metadata.get("structure_path", "")
+                if sp and Path(sp).exists():
+                    pdb_path = sp
+                    break
+        if not pdb_path:
+            # Look for PDB in standard locations relative to input FASTA
+            name = parent.name.split("_")[0] if parent.name else ""
+            if name:
+                for pattern in [
+                    Path(f"run_proteins/{name}_results/structures/{name}.pdb"),
+                    Path(f"{name}_results/structures/{name}.pdb"),
+                ]:
+                    if pattern.exists():
+                        pdb_path = str(pattern)
+                        break
+        protsolm = _protsolm_prediction(seq, pdb_path if pdb_path else None)
+        char["protsolm_probability"] = protsolm["probability"]
+        char["protsolm_label"] = protsolm["label"]
+        char["protsolm_confidence"] = protsolm["confidence"]
+        char["protsolm_score_pct"] = protsolm["score_pct"]
+        char["protsolm_method"] = protsolm.get("method", "ProtSolM")
 
         # TANGO-like β-aggregation prediction (Zyggregator/AGGRESCAN methodology)
         tango = _tango_like_aggregation(seq)
@@ -254,7 +278,7 @@ class ProteinCharacterizationStep(BaseStep):
         char["solubility_class"] = sol["label"]
 
         # Enhanced multi-method solubility ensemble
-        sol_ensemble = _solubility_ensemble(seq)
+        sol_ensemble = _solubility_ensemble(seq, protsolm_result=protsolm)
         char["solubility_ensemble"] = sol_ensemble["ensemble_score"]
         char["solubility_ensemble_class"] = sol_ensemble["ensemble_class"]
         char["solubility_ensemble_confidence"] = sol_ensemble["confidence"]
@@ -1291,6 +1315,113 @@ def _solubility_prediction(seq: str) -> dict[str, Any]:
     return {"score": round(pct, 1), "label": label}
 
 
+# ── ProtSolM Deep-Learning Solubility Prediction ──────────────
+
+
+def _protsolm_prediction(seq: str, pdb_path: str | None = None) -> dict[str, Any]:
+    """Run ProtSolM (Tan et al., IEEE BIBM 2024) solubility prediction.
+
+    ProtSolM is a multimodal deep-learning model that fuses:
+      - ESM2 (650M) protein language model embeddings
+      - ProtSSN EGNN graph neural network on Cα contact graph
+      - 42 handcrafted features (AA composition, GRAVY, SS, H-bonds, etc.)
+
+    Requires a PDB file for graph construction.  Falls back to a
+    sequence-only heuristic estimate when no PDB is available.
+    """
+    if pdb_path is None or not Path(pdb_path).exists():
+        logger.warning("ProtSolM: no PDB available — using sequence-only fallback")
+        return _protsolm_sequence_fallback(seq)
+
+    helper_script = Path(__file__).resolve().parents[2] / "scripts" / "protsolm_helper.py"
+    if not helper_script.exists():
+        # Try project root
+        helper_script = Path(__file__).resolve().parents[3] / "scripts" / "protsolm_helper.py"
+    if not helper_script.exists():
+        logger.warning("ProtSolM helper script not found — using fallback")
+        return _protsolm_sequence_fallback(seq)
+
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            out_json = f.name
+
+        result = subprocess.run(
+            [sys.executable, str(helper_script), str(pdb_path), out_json,
+             "--sequence", seq],
+            capture_output=True, text=True, timeout=600,
+        )
+        if result.returncode != 0:
+            logger.warning(f"ProtSolM helper failed: {result.stderr[:300]}")
+            return _protsolm_sequence_fallback(seq)
+
+        with open(out_json) as fh:
+            pred = json.load(fh)
+
+        return {
+            "probability": pred.get("probability", 0.5),
+            "label": pred.get("label", "Unknown"),
+            "confidence": pred.get("confidence", "low"),
+            "score_pct": pred.get("score_pct", 50.0),
+            "method": pred.get("method", "ESM2 + ProtSSN EGNN + feature fusion"),
+            "model": pred.get("model", "ProtSolM"),
+            "raw_logits": pred.get("raw_logits", []),
+        }
+    except subprocess.TimeoutExpired:
+        logger.warning("ProtSolM timed out after 600s — using fallback")
+        return _protsolm_sequence_fallback(seq)
+    except Exception as e:
+        logger.warning(f"ProtSolM failed: {e} — using fallback")
+        return _protsolm_sequence_fallback(seq)
+    finally:
+        try:
+            os.unlink(out_json)
+        except Exception:
+            pass
+
+
+def _protsolm_sequence_fallback(seq: str) -> dict[str, Any]:
+    """Simple sequence-only solubility estimate when ProtSolM cannot run.
+
+    Uses a weighted combination of charge, hydrophobicity, and composition
+    features as a rough proxy.
+    """
+    n = len(seq)
+    if n == 0:
+        return {
+            "probability": 0.5, "label": "Unknown", "confidence": "none",
+            "score_pct": 50.0, "method": "sequence-only fallback",
+        }
+
+    charged_frac = sum(1 for aa in seq if aa in "DEKRH") / n
+    hydrophobic_frac = sum(1 for aa in seq if aa in "AILMFVW") / n
+    gravy = sum(
+        {"A": 1.8, "R": -4.5, "N": -3.5, "D": -3.5, "C": 2.5,
+         "E": -3.5, "Q": -3.5, "G": -0.4, "H": -3.2, "I": 4.5,
+         "L": 3.8, "K": -3.9, "M": 1.9, "F": 2.8, "P": -1.6,
+         "S": -0.8, "T": -0.7, "W": -0.9, "Y": -1.3, "V": 4.2
+         }.get(aa, 0) for aa in seq
+    ) / n
+
+    # Simple logistic regression-like score
+    score = 0.5 + 0.3 * charged_frac - 0.4 * hydrophobic_frac - 0.1 * max(gravy, 0)
+    prob = max(0.0, min(1.0, score))
+
+    if prob >= 0.6:
+        label = "Soluble"
+    elif prob >= 0.4:
+        label = "Borderline"
+    else:
+        label = "Insoluble"
+
+    return {
+        "probability": round(prob, 4),
+        "label": label,
+        "confidence": "low",
+        "score_pct": round(prob * 100, 1),
+        "method": "sequence-only fallback (no PDB available)",
+    }
+
+
 # ── CamSol Intrinsic Solubility Profile ────────────────────────
 
 
@@ -1578,12 +1709,13 @@ def _tango_like_aggregation(seq: str, window: int = 7) -> dict[str, Any]:
 # ── Enhanced Solubility Ensemble ───────────────────────────────
 
 
-def _solubility_ensemble(seq: str) -> dict[str, Any]:
+def _solubility_ensemble(seq: str,
+                         protsolm_result: dict[str, Any] | None = None) -> dict[str, Any]:
     """Multi-method solubility prediction ensemble.
 
     Combines four complementary approaches:
     1. Wilkinson-Harrison (composition-based, E. coli focus)
-    2. CamSol whole-protein score (Sormanni et al., 2015)
+    2. ProtSolM (Tan et al., IEEE BIBM 2024 — deep learning)
     3. Solubility-Weighted Index (SWI, Bhandari et al., 2020)
     4. PROSO II-like SVM features (sequence feature regression)
 
@@ -1599,10 +1731,11 @@ def _solubility_ensemble(seq: str) -> dict[str, Any]:
     # Method 1: Wilkinson-Harrison (already exists — call it)
     wh = _solubility_prediction(seq)
 
-    # Method 2: CamSol overall score
-    camsol = _camsol_profile(seq)
-    # Convert CamSol overall to 0-100 scale (CamSol range typically -2 to +2)
-    camsol_pct = max(0, min(100, (camsol["overall"] + 2.0) / 4.0 * 100))
+    # Method 2: ProtSolM deep-learning prediction
+    if protsolm_result is not None:
+        protsolm_pct = protsolm_result.get("score_pct", 50.0)
+    else:
+        protsolm_pct = 50.0  # neutral default
 
     # Method 3: Solubility-Weighted Index (SWI)
     swi = _swi_score(seq)
@@ -1611,15 +1744,16 @@ def _solubility_ensemble(seq: str) -> dict[str, Any]:
     proso = _proso_like_score(seq)
 
     # Ensemble: weighted average (weights reflect method reliability)
+    # ProtSolM gets highest weight as a structure-aware deep-learning method
     weights = {
-        "wilkinson_harrison": 0.20,
-        "camsol": 0.35,
+        "wilkinson_harrison": 0.15,
+        "protsolm": 0.40,
         "swi": 0.25,
         "proso": 0.20,
     }
     scores = {
         "wilkinson_harrison": wh["score"],
-        "camsol": camsol_pct,
+        "protsolm": protsolm_pct,
         "swi": swi["score"],
         "proso": proso["score"],
     }
@@ -1650,6 +1784,10 @@ def _solubility_ensemble(seq: str) -> dict[str, Any]:
     else:
         confidence = "low"
 
+    protsolm_label = ("Soluble" if protsolm_pct >= 60
+                      else "Borderline" if protsolm_pct >= 40
+                      else "Insoluble")
+
     return {
         "ensemble_score": round(ensemble, 1),
         "ensemble_class": ensemble_class,
@@ -1657,10 +1795,11 @@ def _solubility_ensemble(seq: str) -> dict[str, Any]:
             "wilkinson_harrison": {
                 "score": wh["score"], "label": wh["label"]
             },
-            "camsol": {
-                "score": round(camsol_pct, 1),
-                "raw_score": camsol["overall"],
-                "label": "Soluble" if camsol_pct >= 60 else "Borderline" if camsol_pct >= 40 else "Insoluble",
+            "protsolm": {
+                "score": round(protsolm_pct, 1),
+                "probability": protsolm_result.get("probability", 0.5) if protsolm_result else 0.5,
+                "label": protsolm_label,
+                "method": protsolm_result.get("method", "ProtSolM") if protsolm_result else "unavailable",
             },
             "swi": {
                 "score": swi["score"], "label": swi["label"],
@@ -1671,7 +1810,6 @@ def _solubility_ensemble(seq: str) -> dict[str, Any]:
             },
         },
         "confidence": confidence,
-        "camsol_profile": camsol,
     }
 
 

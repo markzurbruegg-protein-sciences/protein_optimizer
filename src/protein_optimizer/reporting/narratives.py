@@ -1042,6 +1042,32 @@ def generate_recommendation_summary(results: dict[str, StepResult]) -> str:
     return "\n".join(lines)
 
 
+def _suggest_apr_fixes(core_seq: str, start_pos: int) -> str:
+    """Generate per-residue mutation suggestions for an APR nucleation core."""
+    # Identify the most β-prone / hydrophobic residues in the core
+    HYDRO = set("IVLFMYW")
+    BETA = set("IVLYFWTQMC")
+    suggestions: list[str] = []
+    
+    # Find the most aggregation-promoting residues
+    for i, aa in enumerate(core_seq):
+        pos = start_pos + i
+        if aa in HYDRO:
+            # Strong hydrophobic — prime target
+            if aa in "IVL":
+                suggestions.append(f"{aa}{pos}→A/T (reduce hydrophobicity)")
+            elif aa in "FYW":
+                suggestions.append(f"{aa}{pos}→N/S (break aromatic stacking)")
+            elif aa == "M":
+                suggestions.append(f"{aa}{pos}→Q (polar replacement)")
+    
+    if not suggestions:
+        # If no clear hydrophobic targets, suggest proline at edge
+        suggestions.append(f"Insert P at position {start_pos - 1} or {start_pos + len(core_seq)}")
+    
+    return "; ".join(suggestions[:3])
+
+
 def _protein_characterization_narrative(name: str, result: StepResult) -> str:
     """Narrative for protein_characterization step."""
     parent = None
@@ -1142,84 +1168,227 @@ def _protein_characterization_narrative(name: str, result: StepResult) -> str:
         )
 
     # ── Enhanced Aggregation Section ──
-    # CamSol
-    camsol_overall = char.get("camsol_overall", 0)
-    camsol_patches = char.get("camsol_patches", [])
-    camsol_patch_count = char.get("camsol_patch_count", 0)
+    # ProtSolM deep-learning solubility
+    protsolm_prob = char.get("protsolm_probability", 0)
+    protsolm_label = char.get("protsolm_label", "")
+    protsolm_confidence = char.get("protsolm_confidence", "")
+    protsolm_score_pct = char.get("protsolm_score_pct", 0)
 
     # TANGO-like
     tango_aprs = char.get("tango_aprs", [])
     tango_apr_count = char.get("tango_apr_count", 0)
     tango_gatekeepers = char.get("tango_gatekeepers", [])
     tango_cores = char.get("tango_nucleation_cores", [])
+    tango_overall = char.get("tango_overall_score", 0)
 
-    if tango_apr_count > 0 or camsol_patch_count > 0:
-        lines.append("<p><strong>Aggregation Analysis:</strong></p>")
+    lines.append('<h4 style="margin:1rem 0 0.3rem">Aggregation Propensity</h4>')
 
-        if camsol_overall != 0:
-            cs_verdict = ("favorable" if camsol_overall > 0
-                          else "moderately risky" if camsol_overall > -0.5
-                          else "high risk")
+    # ProtSolM deep-learning solubility prediction
+    if protsolm_label:
+        ps_verdict = ("favorable" if protsolm_prob >= 0.6
+                      else "borderline" if protsolm_prob >= 0.4
+                      else "poor")
+        lines.append(
+            f"<p><strong>ProtSolM Prediction:</strong> "
+            f"<strong>{protsolm_label}</strong> "
+            f"(P(soluble) = {protsolm_prob:.3f}, {protsolm_confidence} confidence, "
+            f"{protsolm_score_pct:.0f}%). "
+            f"ProtSolM (Tan et al., <em>IEEE BIBM</em> 2024) is a multimodal "
+            f"deep-learning model that fuses ESM2 protein language model embeddings, "
+            f"ProtSSN equivariant graph neural network features computed from the "
+            f"3D structure, and 42 handcrafted biophysical features (amino acid "
+            f"composition, GRAVY, secondary structure, hydrogen bonds, solvent "
+            f"exposure, and pLDDT). The combined representation is pooled via "
+            f"learned attention and classified for solubility. "
+            f"Overall solubility outlook: <strong>{ps_verdict}</strong>.</p>"
+        )
+
+    # TANGO-like β-aggregation section
+    lines.append(
+        f"<p><strong>β-Aggregation Analysis</strong> "
+        f"(Zyggregator/AGGRESCAN combined methodology): "
+    )
+    if tango_apr_count > 0:
+        total_apr_res = sum(a['length'] for a in tango_aprs)
+        lines.append(
+            f"<strong>{tango_apr_count} aggregation-prone region(s)</strong> "
+            f"identified, spanning <strong>{total_apr_res} residues</strong> "
+            f"({tango_overall * 100:.1f}% of sequence). "
+            f"APRs are short hydrophobic β-prone segments (≥5 residues) that can "
+            f"nucleate amyloid-like intermolecular contacts during protein folding, "
+            f"especially in the crowded <em>E.&nbsp;coli</em> cytoplasm.</p>"
+        )
+
+        # Detailed APR table
+        lines.append(
+            '<table style="margin:0.5rem 0;font-size:0.9em;width:100%">'
+            "<thead><tr>"
+            "<th>APR</th><th>Position</th><th>Sequence</th>"
+            "<th>Length</th><th>Mean Score</th><th>Peak Score</th>"
+            "<th>Risk</th>"
+            "</tr></thead><tbody>"
+        )
+        for i, a in enumerate(tango_aprs):
+            risk_class = "bad" if a['peak_score'] >= 0.8 else "warn" if a['peak_score'] >= 0.5 else "good"
+            risk_label = "High" if a['peak_score'] >= 0.8 else "Moderate" if a['peak_score'] >= 0.5 else "Low"
+            seq_display = html.escape(a['sequence'][:18])
+            if len(a['sequence']) > 18:
+                seq_display += "…"
             lines.append(
-                f"<p>CamSol intrinsic solubility score: <strong>{camsol_overall:+.3f}</strong> "
-                f"({cs_verdict}). "
-                f"Scores &gt;0 indicate intrinsic solubility; scores &lt;-1.0 indicate "
-                f"aggregation-prone regions (Sormanni et al., <em>J. Mol. Biol.</em> 2015).</p>"
+                f'<tr><td>APR-{i + 1}</td>'
+                f'<td>{a["start"]}–{a["end"]}</td>'
+                f'<td><code>{seq_display}</code></td>'
+                f'<td>{a["length"]}</td>'
+                f'<td>{a["mean_score"]:.3f}</td>'
+                f'<td>{a["peak_score"]:.3f}</td>'
+                f'<td class="{risk_class}">{risk_label}</td></tr>'
             )
-            if camsol_patches:
-                patch_details = ", ".join(
-                    f"residues {p['start']}–{p['end']} (score {p['mean_score']:+.2f})"
-                    for p in camsol_patches[:4]
-                )
-                lines.append(
-                    f"<p style='margin-left:1em;font-size:0.92em'>"
-                    f"<strong>{camsol_patch_count} aggregation-prone patch(es)</strong> "
-                    f"identified: {patch_details}.</p>"
-                )
+        lines.append("</tbody></table>")
 
-        if tango_apr_count > 0:
-            apr_details = ", ".join(
-                f"residues {a['start']}–{a['end']} ({a['sequence'][:12]}"
-                f"{'…' if len(a['sequence']) > 12 else ''}, score {a['mean_score']:.2f})"
-                for a in tango_aprs[:4]
+        # Nucleation cores — the critical sub-segments
+        if tango_cores:
+            lines.append(
+                "<p><strong>Nucleation Cores:</strong> Within each APR, the highest-"
+                "propensity sub-segment (5–8 residues) acts as the nucleation core — "
+                "the minimal sequence that can seed cross-β assembly. These are the "
+                "primary targets for aggregation-breaking mutations:</p>"
             )
             lines.append(
-                f"<p>β-aggregation predictor (Zyggregator/AGGRESCAN methodology) "
-                f"identified <strong>{tango_apr_count} APR(s)</strong>: {apr_details}.</p>"
+                '<table style="margin:0.5rem 0;font-size:0.9em">'
+                "<thead><tr>"
+                "<th>Core</th><th>Position</th><th>Sequence</th><th>Score</th>"
+                "<th>Suggested Intervention</th>"
+                "</tr></thead><tbody>"
             )
-
-            # Nucleation cores
-            if tango_cores:
-                core_details = ", ".join(
-                    f"<strong>{c['sequence']}</strong> (pos {c['start']}–{c['end']}, "
-                    f"score {c['score']:.2f})"
-                    for c in tango_cores[:3]
-                )
+            for i, c in enumerate(tango_cores):
+                # Generate mutation suggestions for each core
+                core_seq = c['sequence']
+                suggestions = _suggest_apr_fixes(core_seq, c['start'])
                 lines.append(
-                    f"<p style='margin-left:1em;font-size:0.92em'>"
-                    f"Nucleation cores (highest propensity subsequences): {core_details}.</p>"
+                    f'<tr><td>Core-{i + 1}</td>'
+                    f'<td>{c["start"]}–{c["end"]}</td>'
+                    f'<td><code>{html.escape(core_seq)}</code></td>'
+                    f'<td>{c["score"]:.3f}</td>'
+                    f'<td style="font-size:0.88em">{suggestions}</td></tr>'
                 )
+            lines.append("</tbody></table>")
 
-            # Gatekeeper analysis
-            if tango_gatekeepers:
-                protected = sum(1 for g in tango_gatekeepers if g.get("protected"))
-                unprotected = tango_apr_count - protected
-                if unprotected > 0:
-                    lines.append(
-                        f"<p>⚠ <strong>{unprotected} APR(s) lack adequate gatekeeper "
-                        f"residues</strong> (charged/proline flanking residues). Introducing "
-                        f"charged gatekeepers (K, R, D, E) adjacent to unprotected APRs "
-                        f"can reduce aggregation propensity.</p>"
-                    )
+        # Gatekeeper analysis — detailed per-APR breakdown
+        lines.append(
+            "<p><strong>Gatekeeper Analysis:</strong> Natural proteins suppress "
+            "aggregation of APRs by flanking them with <em>gatekeeper</em> residues — "
+            "charged amino acids (K, R, D, E) and prolines (P) that are "
+            "electrostatically or sterically incompatible with β-sheet extension. "
+            "At least two gatekeepers (one on each side) are needed for effective "
+            "protection. Histidine (H) provides pH-dependent gating.</p>"
+        )
+
+        # Build per-APR gatekeeper status
+        # Map APRs to their gatekeeper entries
+        gk_by_apr: dict[str, dict] = {}
+        for g in tango_gatekeepers:
+            key = f"{g['apr_start']}-{g['apr_end']}"
+            gk_by_apr[key] = g
+
+        lines.append(
+            '<table style="margin:0.5rem 0;font-size:0.9em;width:100%">'
+            "<thead><tr>"
+            "<th>APR</th><th>Position</th><th>N-flank Gatekeepers</th>"
+            "<th>C-flank Gatekeepers</th><th>Status</th><th>Recommendation</th>"
+            "</tr></thead><tbody>"
+        )
+        for i, a in enumerate(tango_aprs):
+            key = f"{a['start']}-{a['end']}"
+            gk_entry = gk_by_apr.get(key)
+
+            n_flankers: list[str] = []
+            c_flankers: list[str] = []
+            if gk_entry:
+                for gk in gk_entry.get("gatekeepers", []):
+                    gk_text = f"{gk['aa']}{gk['position']}"
+                    if gk['side'] == 'N-terminal':
+                        n_flankers.append(gk_text)
+                    else:
+                        c_flankers.append(gk_text)
+
+            has_n = len(n_flankers) > 0
+            has_c = len(c_flankers) > 0
+
+            if has_n and has_c:
+                status_css = "good"
+                status = "Protected"
+                recommendation = "Adequate — preserve existing gatekeepers"
+            elif has_n or has_c:
+                status_css = "warn"
+                status = "Partially protected"
+                missing_side = "N-terminal" if not has_n else "C-terminal"
+                # Suggest specific insertion position
+                if not has_n:
+                    ins_pos = a['start'] - 1
                 else:
-                    lines.append(
-                        f"<p>All {tango_apr_count} APR(s) are flanked by gatekeeper residues, "
-                        f"which should help suppress aggregation.</p>"
-                    )
+                    ins_pos = a['end'] + 1
+                recommendation = (
+                    f"Add charged residue (K/R/D/E) at {missing_side} "
+                    f"flank (position ~{ins_pos})"
+                )
+            else:
+                status_css = "bad"
+                status = "Unprotected"
+                recommendation = (
+                    f"Insert gatekeepers at both flanks "
+                    f"(positions ~{a['start'] - 1} and ~{a['end'] + 1})"
+                )
+
+            n_text = ", ".join(n_flankers) if n_flankers else "<em>none</em>"
+            c_text = ", ".join(c_flankers) if c_flankers else "<em>none</em>"
+
+            lines.append(
+                f'<tr><td>APR-{i + 1}</td>'
+                f'<td>{a["start"]}–{a["end"]}</td>'
+                f'<td>{n_text}</td>'
+                f'<td>{c_text}</td>'
+                f'<td class="{status_css}">{status}</td>'
+                f'<td style="font-size:0.88em">{recommendation}</td></tr>'
+            )
+        lines.append("</tbody></table>")
+
+        # Summary warning box
+        n_unprotected = sum(
+            1 for a in tango_aprs
+            if not gk_by_apr.get(f"{a['start']}-{a['end']}", {}).get("protected", False)
+        )
+        if n_unprotected > 0:
+            lines.append(
+                f'<div style="background:rgba(248,81,73,0.1);border-left:3px solid '
+                f'#f85149;padding:0.5rem 0.8rem;margin:0.5rem 0;border-radius:4px">'
+                f'<strong>⚠ {n_unprotected} of {tango_apr_count} APR(s) are '
+                f'insufficiently protected by gatekeepers.</strong> '
+                f'<br>Engineering strategies to reduce aggregation risk:'
+                f'<ul style="margin:0.3rem 0 0 1rem;font-size:0.92em">'
+                f'<li><strong>Gatekeeper insertion:</strong> Introduce K, R, D, or E '
+                f'immediately flanking unprotected APRs. Even a single charge can '
+                f'reduce aggregation propensity by 5–50×.</li>'
+                f'<li><strong>Core-breaking mutations:</strong> Replace the most '
+                f'hydrophobic residue within each nucleation core (typically I, V, L, F) '
+                f'with a smaller or polar residue (A, T, S, N) that disrupts β-sheet '
+                f'packing while minimally affecting fold stability.</li>'
+                f'<li><strong>Proline insertion:</strong> Proline at the edge of an APR '
+                f'is a potent β-breaker and gatekeeper. Position proline where backbone '
+                f'flexibility is tolerated (loops, turns).</li>'
+                f'<li><strong>Glycosylation sites:</strong> Introducing N-X-T/S sequons '
+                f'near APRs (if using eukaryotic expression) can shield hydrophobic surfaces.</li>'
+                f'</ul></div>'
+            )
+        else:
+            lines.append(
+                f'<div style="background:rgba(63,185,80,0.1);border-left:3px solid '
+                f'#3fb950;padding:0.5rem 0.8rem;margin:0.5rem 0;border-radius:4px">'
+                f'All {tango_apr_count} APR(s) are adequately protected by gatekeeper '
+                f'residues.</div>'
+            )
     else:
         lines.append(
-            "<p>No significant aggregation-prone regions detected by CamSol or "
-            "β-aggregation analysis.</p>"
+            "No significant β-aggregation-prone regions were detected.</p>"
         )
 
     # ── Enhanced Solubility Section ──
@@ -1229,51 +1398,146 @@ def _protein_characterization_narrative(name: str, result: StepResult) -> str:
     sol_methods = char.get("solubility_methods", {})
 
     if ensemble_class:
-        lines.append("<p><strong>Solubility Prediction (Multi-Method Ensemble):</strong></p>")
+        lines.append('<h4 style="margin:1rem 0 0.3rem">Solubility Prediction</h4>')
         lines.append(
             f"<p>Ensemble prediction: <strong>{ensemble_class}</strong> "
-            f"({ensemble_score:.0f}%, {ensemble_conf} confidence), combining four "
-            f"complementary methods:</p>"
+            f"({ensemble_score:.0f}%, {ensemble_conf} confidence). "
+            f"This combines four complementary computational methods, each "
+            f"capturing different aspects of recombinant protein solubility "
+            f"in <em>E.&nbsp;coli</em>:</p>"
         )
 
-        # Method breakdown table
-        lines.append('<table style="margin:0.5rem 0;font-size:0.9em">')
+        # Method breakdown table with extended descriptions
         lines.append(
+            '<table style="margin:0.5rem 0;font-size:0.9em;width:100%">'
             "<thead><tr><th>Method</th><th>Score</th><th>Prediction</th>"
-            "<th>Basis</th></tr></thead><tbody>"
+            "<th>Weight</th><th>What It Measures</th></tr></thead><tbody>"
         )
         method_info = {
-            "wilkinson_harrison": ("Wilkinson-Harrison", "Composition-based (E. coli)"),
-            "camsol": ("CamSol", "Intrinsic solubility (Sormanni et al.)"),
-            "swi": ("SWI", "Solubility-weighted index (Bhandari et al.)"),
-            "proso": ("PROSO-like", "Sequence features (logistic regression)"),
+            "wilkinson_harrison": (
+                "Wilkinson-Harrison", "15%",
+                "Amino acid composition: net charge, turn-former content, "
+                "cysteine/proline fraction — calibrated on <em>E.&nbsp;coli</em> "
+                "inclusion body vs. soluble datasets (Wilkinson &amp; Harrison, "
+                "<em>Bio/Technology</em> 1991)"
+            ),
+            "protsolm": (
+                "ProtSolM", "40%",
+                "Multimodal deep-learning model fusing ESM2 (650M) protein language "
+                "model embeddings, ProtSSN equivariant graph neural network features "
+                "from 3D structure, and 42 handcrafted biophysical features. "
+                "Trained on experimental <em>E.&nbsp;coli</em> solubility data "
+                "(Tan et al., <em>IEEE BIBM</em> 2024)"
+            ),
+            "swi": (
+                "SWI", "25%",
+                "Solubility-weighted index using per-residue experimental "
+                "solubility coefficients from TargetDB inclusion body data "
+                "(Bhandari et al., <em>Bioinformatics</em> 2020). Reports the "
+                "net balance of solubility-helping vs. solubility-hurting residues"
+            ),
+            "proso": (
+                "PROSO-like", "20%",
+                "Logistic regression on 12 sequence features — molecular weight, "
+                "pI, charge, hydrophobicity, GRAVY, instability index, and "
+                "dipeptide frequencies — inspired by PROSO II "
+                "(Smialowski et al., <em>Bioinformatics</em> 2012)"
+            ),
         }
-        for key, (display_name, basis) in method_info.items():
+        for key, (display_name, weight, description) in method_info.items():
             if key in sol_methods:
                 m = sol_methods[key]
                 s = m.get("score", 0)
-                l = m.get("label", "?")
-                css = "good" if l == "Soluble" else "warn" if l == "Borderline" else "bad"
+                lbl = m.get("label", "?")
+                css = "good" if lbl == "Soluble" else "warn" if lbl == "Borderline" else "bad"
                 lines.append(
-                    f'<tr><td>{display_name}</td><td>{s:.0f}%</td>'
-                    f'<td class="{css}">{l}</td><td>{basis}</td></tr>'
+                    f'<tr><td><strong>{display_name}</strong></td><td>{s:.1f}%</td>'
+                    f'<td class="{css}">{lbl}</td><td>{weight}</td>'
+                    f'<td style="font-size:0.88em">{description}</td></tr>'
                 )
         lines.append("</tbody></table>")
 
-        # Actionable advice
+        # SWI helpers/hurters detail
+        swi_data = sol_methods.get("swi", {})
+        swi_helpers = swi_data.get("helpers", [])
+        swi_hurters = swi_data.get("hurters", [])
+        if swi_helpers or swi_hurters:
+            lines.append(
+                "<p style='margin-left:1em;font-size:0.92em'>"
+                "<strong>SWI composition detail:</strong> "
+            )
+            if swi_helpers:
+                helpers_text = ", ".join(
+                    f"{h[0]} ({h[1]:.1f}%)" for h in swi_helpers[:5]
+                ) if isinstance(swi_helpers[0], (list, tuple)) else ", ".join(str(h) for h in swi_helpers[:5])
+                lines.append(f"Top solubility helpers: {helpers_text}. ")
+            if swi_hurters:
+                hurters_text = ", ".join(
+                    f"{h[0]} ({h[1]:.1f}%)" for h in swi_hurters[:5]
+                ) if isinstance(swi_hurters[0], (list, tuple)) else ", ".join(str(h) for h in swi_hurters[:5])
+                lines.append(f"Top solubility hurters: {hurters_text}. ")
+            lines.append("</p>")
+
+        # Connection between APRs and solubility
+        if tango_apr_count > 0:
+            lines.append(
+                '<div style="background:rgba(210,153,34,0.1);border-left:3px solid '
+                '#d29922;padding:0.5rem 0.8rem;margin:0.5rem 0;border-radius:4px;'
+                'font-size:0.92em">'
+                '<strong>APR–Solubility Connection:</strong> '
+                f'The {tango_apr_count} identified APR(s) contribute directly to '
+                f'aggregation risk during folding. In the crowded <em>E.&nbsp;coli</em> '
+                f'cytoplasm (~300–400 mg/mL total protein), exposed APRs can '
+                f'engage in intermolecular β-contacts before the native fold sequesters '
+                f'them. This is a key driver of the borderline solubility prediction. '
+                f'Strategies that reduce APR propensity (gatekeeper insertion, '
+                f'core-breaking mutations) typically improve both aggregation resistance '
+                f'AND recombinant solubility simultaneously.</div>'
+            )
+
+        # Detailed actionable advice
         if ensemble_class == "Insoluble":
             lines.append(
-                "<p>⚠ Multiple methods predict poor solubility. Consider: "
-                "solubility-enhancing fusion tags (MBP, SUMO, TrxA), "
-                "lower expression temperature (16–20°C), co-expression with "
-                "chaperones (GroEL/ES, DnaK/J), or surface charge engineering "
-                "at identified aggregation hotspots.</p>"
+                '<div style="background:rgba(248,81,73,0.1);border-left:3px solid '
+                '#f85149;padding:0.5rem 0.8rem;margin:0.5rem 0;border-radius:4px">'
+                '<strong>⚠ Poor solubility predicted.</strong> '
+                'Multi-pronged engineering strategies recommended:'
+                '<ul style="margin:0.3rem 0 0 1rem;font-size:0.92em">'
+                '<li><strong>Fusion tags:</strong> MBP (42 kDa, best for improving '
+                'solubility), SUMO (11 kDa), TrxA (12 kDa), or NusA (55 kDa) '
+                'can dramatically improve folding yield.</li>'
+                '<li><strong>Expression optimization:</strong> Reduce temperature to '
+                '16–20°C, lower IPTG to 0.1 mM, use auto-induction media.</li>'
+                '<li><strong>Chaperone co-expression:</strong> GroEL/ES (for proteins '
+                '&lt;60 kDa), DnaK/DnaJ/GrpE (for larger substrates), or trigger '
+                'factor (for co-translational folding assistance).</li>'
+                '<li><strong>Sequence engineering:</strong> Surface charge optimization, '
+                'APR gatekeeper insertion, consensus stabilization.</li>'
+                '</ul></div>'
             )
         elif ensemble_class == "Borderline":
             lines.append(
-                "<p>Borderline solubility — expression optimization recommended. "
-                "Consider reducing temperature to 18–25°C, using a solubility tag, "
-                "or introducing charged surface mutations at APR-adjacent positions.</p>"
+                '<div style="background:rgba(210,153,34,0.1);border-left:3px solid '
+                '#d29922;padding:0.5rem 0.8rem;margin:0.5rem 0;border-radius:4px">'
+                '<strong>Borderline solubility</strong> — expression optimization is '
+                'important for reliable yields:'
+                '<ul style="margin:0.3rem 0 0 1rem;font-size:0.92em">'
+                '<li>Reduce expression temperature to 18–25°C to slow translation '
+                'and allow more time for productive folding.</li>'
+                '<li>Consider a cleavable solubility tag (SUMO or MBP) if initial '
+                'expression trials show inclusion bodies.</li>'
+                '<li>Introduce charged surface mutations at APR-adjacent positions '
+                '(see gatekeeper recommendations above).</li>'
+                '<li>Use auto-induction media (Studier, <em>Protein Expr. Purif.</em> '
+                '2005) for more gradual expression onset.</li>'
+                '</ul></div>'
+            )
+        else:
+            lines.append(
+                '<div style="background:rgba(63,185,80,0.1);border-left:3px solid '
+                '#3fb950;padding:0.5rem 0.8rem;margin:0.5rem 0;border-radius:4px">'
+                'Favorable solubility prediction. Standard expression conditions '
+                '(37°C, 0.5 mM IPTG) should be suitable as a starting point.</div>'
             )
     else:
         # Fallback to simple solubility
