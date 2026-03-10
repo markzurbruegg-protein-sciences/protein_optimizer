@@ -57,3 +57,6 @@ Thumbs.db
 outputs/
 *.pdb
 pipeline.log
+
+# External dependencies (auto-cloned at runtime)
+external/

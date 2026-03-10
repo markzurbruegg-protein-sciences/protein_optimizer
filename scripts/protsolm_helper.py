@@ -12,6 +12,9 @@ engineered features via a multimodal architecture:
   - Handcrafted features: AA composition, GRAVY, SS composition,
     H-bonds, exposed residue fractions, pLDDT
 
+On first run the repository is auto-cloned from GitHub into
+``~/.cache/protsolm/ProtSolM`` and checkpoints are downloaded.
+
 Usage:
     python scripts/protsolm_helper.py input.pdb output.json
     python scripts/protsolm_helper.py input.pdb output.json --sequence MKVL...
@@ -23,6 +26,9 @@ import json
 import logging
 import math
 import os
+import re
+import shutil
+import subprocess as _subprocess
 import sys
 import warnings
 import tempfile
@@ -37,18 +43,135 @@ warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Resolve paths
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-PROTSOLM_DIR = os.path.join(PROJECT_ROOT, "external", "ProtSolM")
-GNN_CHECKPOINT = os.path.join(PROTSOLM_DIR, "model", "protssn_k20_h512.pt")
-FT_CHECKPOINT = os.path.join(PROTSOLM_DIR, "ckpt",
-                              "feature512_norm_pp_attention1d_k20_h512_lr5e-4.pt")
-NORM_FILE = os.path.join(PROTSOLM_DIR, "norm", "cath_k20_mean_attr.pt")
-GNN_CONFIG_FILE = os.path.join(PROTSOLM_DIR, "src", "config", "egnn.yaml")
+# ── Auto-setup ProtSolM on first use ────────────────────────────
 
-# Add ProtSolM to path
-sys.path.insert(0, PROTSOLM_DIR)
+PROTSOLM_REPO = "https://github.com/tyang816/ProtSolM.git"
+PROTSOLM_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "protsolm")
+PROTSOLM_DIR = os.path.join(PROTSOLM_CACHE_DIR, "ProtSolM")
+
+# Checkpoint URLs (hosted by the ProtSolM authors)
+_CKPT_URLS = {
+    "model/protssn_k20_h512.pt": (
+        "https://huggingface.co/tyang816/ProtSSN/resolve/main/protssn_k20_h512.pt"
+    ),
+    "ckpt/feature512_norm_pp_attention1d_k20_h512_lr5e-4.pt": (
+        "https://huggingface.co/tyang816/ProtSolM/resolve/main/"
+        "feature512_norm_pp_attention1d_k20_h512_lr5e-4.pt"
+    ),
+    "norm/cath_k20_mean_attr.pt": (
+        "https://huggingface.co/tyang816/ProtSSN/resolve/main/cath_k20_mean_attr.pt"
+    ),
+}
+
+
+def _download_file(url: str, dest: str) -> None:
+    """Download *url* to *dest* using urllib (no extra deps)."""
+    import urllib.request
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    logger.info(f"Downloading {os.path.basename(dest)} …")
+    urllib.request.urlretrieve(url, dest)
+
+
+def _patch_models_for_cpu(models_py: str) -> None:
+    """Patch ProtSolM src/models.py so it works without CUDA."""
+    with open(models_py) as f:
+        code = f.read()
+
+    if "_DEVICE" in code:
+        return  # already patched
+
+    # Add device selection at the top of the module
+    code = code.replace(
+        "from src.module.egnn.network import EGNN",
+        "from src.module.egnn.network import EGNN\n\n"
+        "# Device selection: use CUDA if available, otherwise CPU\n"
+        '_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")',
+    )
+    # Replace hardcoded .cuda() calls
+    code = code.replace(
+        ".from_pretrained(self.args.plm).cuda()",
+        ".from_pretrained(self.args.plm).to(_DEVICE)",
+    )
+    code = code.replace(
+        '.to("cuda:0")', ".to(_DEVICE)"
+    )
+    code = re.sub(
+        r"(\[elem)\.cuda\(\)( for elem in batch\])",
+        r"\1.to(_DEVICE)\2",
+        code,
+    )
+    code = code.replace(
+        "self.GNN_model = self.GNN_model.cuda()",
+        "self.GNN_model = self.GNN_model.to(_DEVICE)",
+    )
+    code = code.replace(
+        "torch.cuda.empty_cache()",
+        "torch.cuda.empty_cache() if torch.cuda.is_available() else None",
+    )
+
+    with open(models_py, "w") as f:
+        f.write(code)
+    logger.info("Patched src/models.py for CPU compatibility")
+
+
+def _ensure_protsolm() -> str:
+    """Clone ProtSolM repo + download checkpoints if not already present.
+
+    Returns the path to the ProtSolM directory (ready to use).
+    """
+    if os.path.isdir(PROTSOLM_DIR) and os.path.isfile(
+        os.path.join(PROTSOLM_DIR, "src", "models.py")
+    ):
+        # Already cloned — just make sure checkpoints exist
+        _ensure_checkpoints()
+        return PROTSOLM_DIR
+
+    os.makedirs(PROTSOLM_CACHE_DIR, exist_ok=True)
+    logger.info(f"Cloning ProtSolM to {PROTSOLM_DIR} …")
+    _subprocess.run(
+        ["git", "clone", "--depth", "1", PROTSOLM_REPO, PROTSOLM_DIR],
+        check=True,
+        capture_output=True,
+    )
+
+    # Patch for CPU support
+    models_py = os.path.join(PROTSOLM_DIR, "src", "models.py")
+    _patch_models_for_cpu(models_py)
+
+    _ensure_checkpoints()
+    return PROTSOLM_DIR
+
+
+def _ensure_checkpoints() -> None:
+    """Download any missing checkpoint files."""
+    for rel_path, url in _CKPT_URLS.items():
+        dest = os.path.join(PROTSOLM_DIR, rel_path)
+        if not os.path.isfile(dest):
+            _download_file(url, dest)
+
+
+# ── Resolve paths (set after ensuring ProtSolM exists) ──────────
+
+def _init_paths():
+    """Initialise global checkpoint / config paths after setup."""
+    global GNN_CHECKPOINT, FT_CHECKPOINT, NORM_FILE, GNN_CONFIG_FILE
+    GNN_CHECKPOINT = os.path.join(PROTSOLM_DIR, "model", "protssn_k20_h512.pt")
+    FT_CHECKPOINT = os.path.join(
+        PROTSOLM_DIR, "ckpt",
+        "feature512_norm_pp_attention1d_k20_h512_lr5e-4.pt",
+    )
+    NORM_FILE = os.path.join(PROTSOLM_DIR, "norm", "cath_k20_mean_attr.pt")
+    GNN_CONFIG_FILE = os.path.join(PROTSOLM_DIR, "src", "config", "egnn.yaml")
+
+    # Add ProtSolM to Python path so ``from src.models import …`` works
+    if PROTSOLM_DIR not in sys.path:
+        sys.path.insert(0, PROTSOLM_DIR)
+
+# Declare globals (populated by _init_paths)
+GNN_CHECKPOINT: str = ""
+FT_CHECKPOINT: str = ""
+NORM_FILE: str = ""
+GNN_CONFIG_FILE: str = ""
 
 
 # ── Feature Extraction (from get_feature.py) ──────────────────────
@@ -528,6 +651,10 @@ def run_protsolm_inference(pdb_path: str, sequence: str | None = None) -> dict:
         dict with keys: soluble (bool), probability (float 0-1),
         confidence (str), label (str), raw_logits (list)
     """
+    # Ensure ProtSolM repo + checkpoints are available
+    _ensure_protsolm()
+    _init_paths()
+
     device = torch.device("cpu")  # CPU inference
 
     logger.info("Building protein graph from PDB...")
