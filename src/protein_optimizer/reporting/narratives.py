@@ -1042,6 +1042,111 @@ def generate_recommendation_summary(results: dict[str, StepResult]) -> str:
     return "\n".join(lines)
 
 
+def _protein_characterization_narrative(name: str, result: StepResult) -> str:
+    """Narrative for protein_characterization step."""
+    parent = None
+    for c in result.candidates:
+        if c.parent_id is None:
+            parent = c
+            break
+    if not parent or "characterization" not in parent.metadata:
+        return _wrap_narrative(
+            name, "Protein Characterization",
+            "<p>No characterization data available.</p>",
+        )
+
+    char = parent.metadata["characterization"]
+    n = char.get("length", 0)
+    mw = char.get("molecular_weight", 0)
+    pI = char.get("isoelectric_point", 0)
+    ii = char.get("instability_index", 0)
+    ii_label = char.get("instability_label", "")
+    cys = char.get("cysteine_count", 0)
+    tm = char.get("estimated_tm", 0)
+    tm_conf = char.get("tm_confidence", "")
+    sol_score = char.get("solubility_score", 0)
+    sol_label = char.get("solubility_class", "")
+    disorder_frac = char.get("disorder_fraction", 0)
+    n_idr = len(char.get("disorder_regions", []))
+    domains = char.get("domains", [])
+    domain_count = char.get("domain_count", 0)
+    oligo = char.get("oligomeric_state", "")
+    cof_summary = char.get("cofactor_summary", "")
+    sp = char.get("signal_peptide", {})
+    ph_range = char.get("ph_stable_range", [])
+
+    lines = []
+    lines.append(
+        f"<p>The protein is <strong>{n} residues</strong> long with a molecular "
+        f"weight of <strong>{mw:,.0f} Da</strong> and a theoretical pI of "
+        f"<strong>{pI:.2f}</strong>.</p>"
+    )
+
+    # Stability
+    lines.append(
+        f"<p>The instability index is <strong>{ii:.1f}</strong> "
+        f"(<strong>{ii_label}</strong>). "
+        f"Estimated thermal melting temperature is <strong>~{tm:.0f}°C</strong> "
+        f"({tm_conf} confidence).</p>"
+    )
+
+    # pH
+    if ph_range:
+        lines.append(
+            f"<p>The predicted stable pH window (where net charge ≈ 0) spans "
+            f"<strong>pH {ph_range[0]:.1f} – {ph_range[1]:.1f}</strong>.</p>"
+        )
+
+    # Solubility
+    lines.append(
+        f"<p>E. coli overexpression solubility prediction: "
+        f"<strong>{sol_label}</strong> ({sol_score:.0f}%).</p>"
+    )
+
+    # Signal peptide
+    if sp.get("detected"):
+        lines.append(
+            f"<p>A <strong>signal peptide</strong> was detected "
+            f"(cleavage predicted at position {sp.get('cleavage_position', '?')}, "
+            f"type: {sp.get('type', '?')}). Consider removing if targeting "
+            f"cytoplasmic expression.</p>"
+        )
+
+    # Disorder
+    if n_idr > 0:
+        lines.append(
+            f"<p><strong>{n_idr} intrinsically disordered region(s)</strong> "
+            f"identified, covering {disorder_frac * 100:.0f}% of the sequence. "
+            f"IDRs may affect crystallization and aggregation.</p>"
+        )
+    else:
+        lines.append("<p>No significant intrinsically disordered regions detected.</p>")
+
+    # Domains
+    if domain_count > 1:
+        dom_text = ", ".join(
+            f"{d.get('name', '?')} ({d.get('start', '?')}-{d.get('end', '?')})"
+            for d in domains[:5]
+        )
+        lines.append(
+            f"<p><strong>{domain_count} domains</strong> detected: {dom_text}.</p>"
+        )
+
+    # Cysteines
+    lines.append(
+        f"<p>The sequence contains <strong>{cys} cysteine(s)</strong>."
+        f" Oligomeric state prediction: <strong>{oligo}</strong>.</p>"
+    )
+
+    # Cofactors
+    if cof_summary and cof_summary != "None detected":
+        lines.append(
+            f"<p>Cofactor/metal-binding motifs detected: <strong>{html.escape(cof_summary)}</strong>.</p>"
+        )
+
+    return _wrap_narrative(name, "Protein Characterization", "\n".join(lines))
+
+
 # ── Helpers ──────────────────────────────────────────────────────────
 
 
@@ -1062,6 +1167,7 @@ def _wrap_narrative(step_name: str, title: str, content: str) -> str:
 # ── Registry ─────────────────────────────────────────────────────────
 
 _NARRATORS: dict[str, Any] = {
+    "protein_characterization": _protein_characterization_narrative,
     "cysteine_scan": _cysteine_scan_narrative,
     "motif_scan": _motif_scan_narrative,
     "sequence_complexity": _sequence_complexity_narrative,

@@ -48,6 +48,7 @@ _CHARGE: dict[str, float] = {
 
 # ── Step display name lookup ────────────────────────────────────────
 _STEP_DISPLAY_NAMES: dict[str, str] = {
+    "protein_characterization": "Protein Characterization",
     "cysteine_scan":        "Cysteine Scan",
     "motif_scan":           "Motif Scan",
     "sequence_complexity":  "Sequence Complexity",
@@ -278,6 +279,15 @@ def _compute_metrics(
             if c.parent_id is None and "hydrophobic_patches" in c.metadata:
                 n_surface_patches = len(c.metadata["hydrophobic_patches"])
 
+    # ── Pull characterization data from protein_characterization step ──
+    char: dict[str, Any] = {}
+    char_result = results.get("protein_characterization")
+    if char_result:
+        for c in char_result.candidates:
+            if c.parent_id is None and "characterization" in c.metadata:
+                char = c.metadata["characterization"]
+                break
+
     return {
         "length": n,
         "mw": mw,
@@ -295,6 +305,35 @@ def _compute_metrics(
         "rare_codons": rare_codons,
         "proline_count": proline_count,
         "n_surface_patches": n_surface_patches,
+        # Characterization step data
+        "signal_peptide": char.get("signal_peptide", {}),
+        "disorder_fraction": char.get("disorder_fraction", 0),
+        "disorder_regions": char.get("disorder_regions", []),
+        "disorder_scores": char.get("disorder_scores", []),
+        "disorder_method": char.get("disorder_method", ""),
+        "domains": char.get("domains", []),
+        "domain_count": char.get("domain_count", 0),
+        "domain_method": char.get("domain_method", ""),
+        "oligomeric_state": char.get("oligomeric_state", ""),
+        "oligomeric_evidence": char.get("oligomeric_evidence", []),
+        "cofactor_motifs": char.get("cofactor_motifs", []),
+        "cofactor_summary": char.get("cofactor_summary", ""),
+        "estimated_tm": char.get("estimated_tm", 0),
+        "tm_confidence": char.get("tm_confidence", ""),
+        "ph_curve": char.get("ph_curve", []),
+        "ph_stable_range": char.get("ph_stable_range", []),
+        "aggregation_regions": char.get("aggregation_regions", []),
+        "aggregation_region_count": char.get("aggregation_region_count", 0),
+        "charge_symmetry": char.get("charge_symmetry", 0),
+        "charged_fraction": char.get("charged_fraction", 0),
+        "solubility_score": char.get("solubility_score", 0),
+        "solubility_class": char.get("solubility_class", ""),
+        "extinction_coefficient": char.get("extinction_coefficient", {}),
+        "disulfide_potential": char.get("disulfide_potential", {}),
+        "rare_codon_details": char.get("rare_codon_details", ""),
+        "rare_codon_fraction": char.get("rare_codon_fraction", 0),
+        "aromaticity": char.get("aromaticity", 0),
+        "sequence": char.get("sequence", seq),
     }
 
 
@@ -465,6 +504,7 @@ def _collect_step_mutations(
 
 
 _TIER_MAP: dict[str, int] = {
+    "protein_characterization": 1,
     "cysteine_scan": 1, "motif_scan": 1, "sequence_complexity": 1,
     "find_homologs": 2, "consensus_design": 2, "pssm_analysis": 2,
     "predict_structure": 3, "disulfide_design": 3, "cavity_fill": 3,
@@ -983,6 +1023,307 @@ def _collect_tier_viewer_data(
     return result
 
 
+# ── SVG sparkline generators ────────────────────────────────────
+
+
+def _sparkline_svg(
+    values: list[float],
+    width: int = 140,
+    height: int = 24,
+    color: str = "#58a6ff",
+    threshold: float | None = None,
+    threshold_color: str = "#f85149",
+    fill: bool = False,
+) -> str:
+    """Generate an inline SVG sparkline from a list of values."""
+    if not values:
+        return ""
+    n = len(values)
+    vmin = min(values)
+    vmax = max(values)
+    vrange = vmax - vmin if vmax != vmin else 1.0
+
+    # Build polyline points
+    points: list[str] = []
+    for i, v in enumerate(values):
+        x = (i / max(n - 1, 1)) * width
+        y = height - ((v - vmin) / vrange) * (height - 2) - 1
+        points.append(f"{x:.1f},{y:.1f}")
+
+    polyline = " ".join(points)
+
+    parts = [f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+             f'style="display:inline-block;vertical-align:middle;margin-left:6px" '
+             f'xmlns="http://www.w3.org/2000/svg">']
+
+    if fill:
+        # Area fill
+        fill_points = f"0,{height} " + polyline + f" {width},{height}"
+        parts.append(f'<polygon points="{fill_points}" fill="{color}" opacity="0.15"/>')
+
+    parts.append(f'<polyline points="{polyline}" fill="none" stroke="{color}" '
+                 f'stroke-width="1.5" stroke-linecap="round"/>')
+
+    # Threshold line
+    if threshold is not None and vmin <= threshold <= vmax:
+        ty = height - ((threshold - vmin) / vrange) * (height - 2) - 1
+        parts.append(f'<line x1="0" y1="{ty:.1f}" x2="{width}" y2="{ty:.1f}" '
+                     f'stroke="{threshold_color}" stroke-width="0.8" '
+                     f'stroke-dasharray="3,2" opacity="0.7"/>')
+
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _ph_sparkline(curve: list[list[float]], stable_range: list[float],
+                  width: int = 140, height: int = 28) -> str:
+    """Generate a pH-vs-charge sparkline with stable window highlighted."""
+    if not curve:
+        return ""
+
+    charges = [c for _, c in curve]
+    pHs = [p for p, _ in curve]
+    n = len(curve)
+    cmin = min(charges)
+    cmax = max(charges)
+    crange = cmax - cmin if cmax != cmin else 1.0
+    pH_min, pH_max = pHs[0], pHs[-1]
+    pH_range = pH_max - pH_min if pH_max != pH_min else 1.0
+
+    parts = [f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+             f'style="display:inline-block;vertical-align:middle;margin-left:6px" '
+             f'xmlns="http://www.w3.org/2000/svg">']
+
+    # Stable window background
+    if stable_range and len(stable_range) == 2:
+        x1 = ((stable_range[0] - pH_min) / pH_range) * width
+        x2 = ((stable_range[1] - pH_min) / pH_range) * width
+        parts.append(f'<rect x="{x1:.1f}" y="0" width="{max(x2 - x1, 1):.1f}" '
+                     f'height="{height}" fill="#3fb950" opacity="0.15" rx="2"/>')
+
+    # Zero-charge line
+    if cmin < 0 < cmax:
+        zy = height - ((0 - cmin) / crange) * (height - 4) - 2
+        parts.append(f'<line x1="0" y1="{zy:.1f}" x2="{width}" y2="{zy:.1f}" '
+                     f'stroke="#c9d1d9" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.4"/>')
+
+    # Charge curve
+    points: list[str] = []
+    for i, (pH, charge) in enumerate(curve):
+        x = ((pH - pH_min) / pH_range) * width
+        y = height - ((charge - cmin) / crange) * (height - 4) - 2
+        points.append(f"{x:.1f},{y:.1f}")
+
+    polyline = " ".join(points)
+    parts.append(f'<polyline points="{polyline}" fill="none" stroke="#58a6ff" '
+                 f'stroke-width="1.5" stroke-linecap="round"/>')
+
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _disorder_sparkline(scores: list[float], threshold: float = 0.5,
+                        width: int = 140, height: int = 20) -> str:
+    """Generate a per-residue disorder sparkline (bar-style)."""
+    if not scores:
+        return ""
+
+    n = len(scores)
+    bar_w = max(width / n, 0.5)
+
+    parts = [f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+             f'style="display:inline-block;vertical-align:middle;margin-left:6px" '
+             f'xmlns="http://www.w3.org/2000/svg">']
+
+    # Threshold line
+    ty = height - threshold * (height - 2) - 1
+    parts.append(f'<line x1="0" y1="{ty:.1f}" x2="{width}" y2="{ty:.1f}" '
+                 f'stroke="#f85149" stroke-width="0.6" stroke-dasharray="2,2" opacity="0.5"/>')
+
+    for i, s in enumerate(scores):
+        x = (i / n) * width
+        bh = s * (height - 2)
+        y = height - bh - 1
+        color = "#f85149" if s >= threshold else "#58a6ff"
+        parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.2f}" '
+                     f'height="{bh:.1f}" fill="{color}" opacity="0.7"/>')
+
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+# ── Characterization metric helpers (conditional rendering) ─────
+
+
+def _char_tm_metric(m: dict, _metric) -> str:
+    """Render estimated Tm metric if characterization data available."""
+    tm = m.get("estimated_tm", 0)
+    if not tm:
+        return ""
+    conf = m.get("tm_confidence", "low")
+    tm_css = "good" if tm >= 60 else "warn" if tm >= 45 else "bad"
+    return f'      {_metric("Est. Tm", f"{tm:.0f}°C ({conf} conf.)", tm_css)}'
+
+
+def _char_aggregation_metric(m: dict, _metric) -> str:
+    """Render APR count if characterization data available."""
+    apr_count = m.get("aggregation_region_count", 0)
+    regions = m.get("aggregation_regions", [])
+    if not apr_count and not regions:
+        return ""
+    apr_css = "good" if apr_count == 0 else "warn" if apr_count <= 2 else "bad"
+    parts_text = ""
+    if regions:
+        locs = ", ".join(f"{r['start']}-{r['end']}" for r in regions[:3])
+        parts_text = f" ({locs})"
+    return f'      {_metric("APRs", f"{apr_count} region(s){parts_text}", apr_css)}'
+
+
+def _char_solubility_metric(m: dict, _metric) -> str:
+    """Render solubility prediction."""
+    score = m.get("solubility_score", 0)
+    label = m.get("solubility_class", "")
+    if not label:
+        return ""
+    sol_css = "good" if label == "Soluble" else "warn" if label == "Borderline" else "bad"
+    return f'      {_metric("Solubility (E. coli)", f"{score:.0f}% ({label})", sol_css)}'
+
+
+def _char_disulfide_metric(m: dict, _metric) -> str:
+    """Render disulfide bond potential."""
+    dp = m.get("disulfide_potential", {})
+    if not dp:
+        return ""
+    pairs = dp.get("possible_pairs", 0)
+    unpaired = dp.get("unpaired_cys", 0)
+    text = f"{pairs} possible pair(s)"
+    if unpaired > 0:
+        text += f", {unpaired} free"
+    css = "warn" if unpaired > 0 else ""
+    return f'      {_metric("Disulfide Bonds", text, css)}'
+
+
+def _char_ph_metric(m: dict, _metric) -> str:
+    """Render pH stability window with sparkline."""
+    ph_range = m.get("ph_stable_range", [])
+    ph_curve = m.get("ph_curve", [])
+    if not ph_range:
+        return ""
+    sparkline = _ph_sparkline(ph_curve, ph_range)
+    return (f'      {_metric("Stable pH Range", f"{ph_range[0]:.1f} – {ph_range[1]:.1f}", "")}'
+            f'\n      <div class="metric-row"><span class="label">Charge vs pH</span>{sparkline}</div>')
+
+
+def _char_colloidal_metric(m: dict, _metric) -> str:
+    """Render colloidal stability metrics."""
+    sigma = m.get("charge_symmetry", 0)
+    cf = m.get("charged_fraction", 0)
+    if not sigma and not cf:
+        return ""
+    sigma_css = "good" if sigma < 0.05 else "warn" if sigma < 0.15 else "bad"
+    return (f'      {_metric("Charge Symmetry (σ)", f"{sigma:.3f}", sigma_css)}'
+            f'\n      {_metric("Charged Fraction", f"{cf * 100:.1f}%", "")}')
+
+
+def _char_rare_codon_metric(m: dict, _metric) -> str:
+    """Render enhanced rare codon info."""
+    details = m.get("rare_codon_details", "")
+    frac = m.get("rare_codon_fraction", 0)
+    if not details:
+        return ""
+    rc_css = "good" if frac < 0.05 else "warn" if frac < 0.15 else "bad"
+    return f'      {_metric("Rare Codon Load", f"{frac * 100:.1f}%", rc_css)}'
+
+
+def _char_sequence_features_group(m: dict, _metric) -> str:
+    """Render Sequence Features metric group (signal peptides, IDRs)."""
+    lines: list[str] = []
+
+    # Signal peptide
+    sp = m.get("signal_peptide", {})
+    if sp:
+        if sp.get("detected"):
+            sp_text = f"Residues 1–{sp.get('cleavage_position', '?')}"
+            sp_type = sp.get("type", "")
+            if sp_type:
+                sp_text += f" ({sp_type})"
+            lines.append(_metric("Signal Peptide", sp_text, "warn"))
+        else:
+            lines.append(_metric("Signal Peptide", "None detected", "good"))
+
+    # Intrinsically disordered regions
+    disorder_frac = m.get("disorder_fraction", 0)
+    disorder_regions = m.get("disorder_regions", [])
+    disorder_scores = m.get("disorder_scores", [])
+    if disorder_scores or disorder_frac:
+        n_idr = len(disorder_regions)
+        idr_residues = sum(r.get("length", 0) for r in disorder_regions)
+        idr_css = "good" if disorder_frac < 0.1 else "warn" if disorder_frac < 0.3 else "bad"
+        idr_text = f"{n_idr} IDR(s), {idr_residues} res ({disorder_frac * 100:.0f}%)"
+        lines.append(_metric("Disordered Regions", idr_text, idr_css))
+        # Disorder sparkline
+        if disorder_scores:
+            sparkline = _disorder_sparkline(disorder_scores)
+            lines.append(f'<div class="metric-row"><span class="label">Disorder Profile</span>{sparkline}</div>')
+
+    # Extinction coefficient
+    ec = m.get("extinction_coefficient", {})
+    if ec:
+        ec_val = ec.get("reduced", 0)
+        lines.append(_metric("ε₂₈₀ (reduced)", f"{ec_val:,} M⁻¹cm⁻¹", ""))
+
+    # Aromaticity
+    arom = m.get("aromaticity", 0)
+    if arom:
+        lines.append(_metric("Aromaticity", f"{arom:.3f}", ""))
+
+    if not lines:
+        return ""
+
+    inner = "\n      ".join(lines)
+    return f'''    <div class="metric-group">
+      <h3>Sequence Features</h3>
+      {inner}
+    </div>'''
+
+
+def _char_fold_architecture_group(m: dict, _metric) -> str:
+    """Render Fold & Architecture metric group."""
+    lines: list[str] = []
+
+    # Domain architecture
+    domains = m.get("domains", [])
+    domain_count = m.get("domain_count", 0)
+    if domains or domain_count:
+        if domain_count <= 1:
+            dom_text = "Single domain"
+        else:
+            boundaries = ", ".join(f"{d.get('start', '?')}–{d.get('end', '?')}" for d in domains[:4])
+            dom_text = f"{domain_count} detected ({boundaries})"
+        lines.append(_metric("Domains", dom_text, ""))
+
+    # Oligomeric state
+    oligo = m.get("oligomeric_state", "")
+    if oligo:
+        oligo_css = "" if "monomer" in oligo.lower() else "warn"
+        lines.append(_metric("Oligomeric State", oligo, oligo_css))
+
+    # Cofactor motifs
+    cof_summary = m.get("cofactor_summary", "")
+    if cof_summary:
+        cof_css = "" if cof_summary == "None detected" else "warn"
+        lines.append(_metric("Cofactor Motifs", cof_summary, cof_css))
+
+    if not lines:
+        return ""
+
+    inner = "\n      ".join(lines)
+    return f'''    <div class="metric-group">
+      <h3>Fold &amp; Architecture</h3>
+      {inner}
+    </div>'''
+
+
 def _hero_section(
     parent: ProteinCandidate | None,
     metrics: dict[str, Any],
@@ -1064,7 +1405,7 @@ def _hero_section(
       <button class="view-btn mode" data-mode="ss" onclick="setView('ss')">2&deg; Structure</button>
       <div class="toolbar-sep"></div>
       <button class="view-btn" id="btn-surface" onclick="toggleSurface()">Surface</button>
-      <button class="view-btn active" id="btn-mutations" onclick="toggleMutations()">Mutations</button>
+      <button class="view-btn" id="btn-mutations" onclick="toggleMutations()">Mutations</button>
     </div>
   </div>
 
@@ -1082,13 +1423,16 @@ def _hero_section(
       <h3>Thermal Stability</h3>
       {_metric("Instability Index", f"{ii:.1f} ({m.get('instability_label', '?')})", ii_css)}
       {_metric("Aliphatic Index", f"{ai:.1f}", ai_css)}
+{_char_tm_metric(m, _metric)}
     </div>
 
     <div class="metric-group">
-      <h3>Aggregation Propensity</h3>
+      <h3>Aggregation &amp; Solubility</h3>
       {_metric("Agg. Score", f"{agg:.3f}", agg_css)}
       {_metric("Hydrophobic Patches", f"{m.get('agg_patches', 0)}", agg_css)}
       {_metric("Surface Patches (SAP)", f"{m.get('n_surface_patches', 0)}", "")}
+{_char_aggregation_metric(m, _metric)}
+{_char_solubility_metric(m, _metric)}
     </div>
 
     <div class="metric-group">
@@ -1097,13 +1441,20 @@ def _hero_section(
       {_metric("Net Charge (pH 7.4)", f"{charge:+.1f}", charge_css)}
       {_metric("Isoelectric Point", f"{m.get('pI', 0):.2f}", "")}
       {_metric("Cysteines", f"{m.get('cys_count', 0)}", "")}
+{_char_disulfide_metric(m, _metric)}
+{_char_ph_metric(m, _metric)}
+{_char_colloidal_metric(m, _metric)}
     </div>
 
     <div class="metric-group">
       <h3>Expression (E. coli)</h3>
       {_metric("Rare-codon AAs (W/C/M)", f"{m.get('rare_codons', 0)}", "")}
       {_metric("Prolines", f"{m.get('proline_count', 0)}", "")}
+{_char_rare_codon_metric(m, _metric)}
     </div>
+
+{_char_sequence_features_group(m, _metric)}
+{_char_fold_architecture_group(m, _metric)}
 
     <div class="legend">
       <strong style="color:var(--fg)">Highlighted:</strong>
@@ -1121,7 +1472,7 @@ def _hero_section(
   var hlPos = {hl_positions_js};
   var hlLbl = {hl_labels_js};
   var hlClr = {hl_colors_js};
-  var surfOn = false, mutOn = true, curView = "plddt";
+  var surfOn = false, mutOn = false, curView = "plddt";
 
   var aa3 = {{ALA:"A",ARG:"R",ASN:"N",ASP:"D",CYS:"C",GLU:"E",GLN:"Q",
     GLY:"G",HIS:"H",ILE:"I",LEU:"L",LYS:"K",MET:"M",PHE:"F",
@@ -2267,8 +2618,146 @@ def _render_generic_step(result: StepResult) -> str:
 </div>"""
 
 
+def _render_protein_characterization(result: StepResult) -> str:
+    """Render the protein characterization step card."""
+    parent = None
+    for c in result.candidates:
+        if c.parent_id is None:
+            parent = c
+            break
+    if not parent or "characterization" not in parent.metadata:
+        return '<p class="sd-summary">No characterization data available.</p>'
+
+    char = parent.metadata["characterization"]
+    seq = char.get("sequence", "")
+    n = len(seq)
+
+    # ── Sequence display with numbered ruler ──
+    ruler_lines: list[str] = []
+    for i in range(0, n, 60):
+        chunk = seq[i:i + 60]
+        # Add spacing every 10 residues
+        spaced = " ".join(chunk[j:j + 10] for j in range(0, len(chunk), 10))
+        ruler_lines.append(f"{i + 1:>5}  {spaced}")
+    seq_display = "\n".join(ruler_lines)
+
+    # ── Summary cards ──
+    mw = char.get("molecular_weight", 0)
+    pI = char.get("isoelectric_point", 0)
+    ii = char.get("instability_index", 0)
+    ii_label = char.get("instability_label", "")
+    cys = char.get("cysteine_count", 0)
+    sp = char.get("signal_peptide", {})
+    ec = char.get("extinction_coefficient", {})
+    tm = char.get("estimated_tm", 0)
+    sol = char.get("solubility_score", 0)
+    sol_label = char.get("solubility_class", "")
+    ph_range = char.get("ph_stable_range", [])
+
+    # Disorder summary
+    disorder_frac = char.get("disorder_fraction", 0)
+    disorder_regions = char.get("disorder_regions", [])
+    n_idr = len(disorder_regions)
+
+    # Domains
+    domains = char.get("domains", [])
+    domain_count = char.get("domain_count", 0)
+
+    # Cofactors
+    cof_summary = char.get("cofactor_summary", "None detected")
+    cof_motifs = char.get("cofactor_motifs", [])
+
+    # Signal peptide text
+    if sp.get("detected"):
+        sp_text = f"Detected (cleavage at pos {sp.get('cleavage_position', '?')}, type: {sp.get('type', '?')})"
+        sp_method = sp.get("method", "")
+    else:
+        sp_text = "Not detected"
+        sp_method = sp.get("method", "")
+
+    # pH range text
+    ph_text = f"{ph_range[0]:.1f} – {ph_range[1]:.1f}" if ph_range else "N/A"
+
+    # Build cofactor table
+    cof_rows = ""
+    if cof_motifs:
+        cof_rows_list = []
+        for cm in cof_motifs[:10]:
+            cof_rows_list.append(
+                f'<tr><td>{_html.escape(cm.get("name", ""))}</td>'
+                f'<td>{cm.get("start", "")}-{cm.get("end", "")}</td>'
+                f'<td><code>{_html.escape(cm.get("match", ""))}</code></td>'
+                f'<td>{_html.escape(cm.get("description", ""))}</td></tr>'
+            )
+        cof_rows = "".join(cof_rows_list)
+
+    # Build disorder region table
+    idr_rows = ""
+    if disorder_regions:
+        idr_rows_list = []
+        for r in disorder_regions[:10]:
+            idr_rows_list.append(
+                f'<tr><td>{r.get("start", "")}-{r.get("end", "")}</td>'
+                f'<td>{r.get("length", "")}</td>'
+                f'<td>{r.get("mean_score", 0):.3f}</td></tr>'
+            )
+        idr_rows = "".join(idr_rows_list)
+
+    # Domain table
+    dom_rows = ""
+    if domains and domain_count > 1:
+        dom_rows_list = []
+        for d in domains:
+            dom_rows_list.append(
+                f'<tr><td>{_html.escape(str(d.get("name", "")))}</td>'
+                f'<td>{d.get("start", "")}-{d.get("end", "")}</td>'
+                f'<td>{d.get("length", d.get("end", 0) - d.get("start", 0) + 1)}</td></tr>'
+            )
+        dom_rows = "".join(dom_rows_list)
+
+    return f"""
+<p class="sd-summary">Comprehensive biophysical characterization of the wild-type protein.
+Method notes: signal peptide ({_html.escape(sp_method)}), disorder ({_html.escape(char.get('disorder_method', 'heuristic'))}),
+domains ({_html.escape(char.get('domain_method', 'heuristic'))}).</p>
+
+<div class="sd-chips">
+  <span class="chip">{n} residues</span>
+  <span class="chip">{mw:,.0f} Da</span>
+  <span class="chip">pI {pI:.2f}</span>
+  <span class="chip">{cys} Cys</span>
+  <span class="chip">{ii_label} (II={ii:.1f})</span>
+  <span class="chip">Tm ≈ {tm:.0f}°C</span>
+  <span class="chip">pH {ph_text}</span>
+  <span class="chip">{sol_label} ({sol:.0f}%)</span>
+  <span class="chip">{n_idr} IDR(s)</span>
+  <span class="chip">{domain_count} domain(s)</span>
+</div>
+
+<details style="margin-top:8px">
+  <summary style="cursor:pointer;color:var(--accent);font-size:0.85rem">
+    ▸ Full Amino Acid Sequence ({n} residues)
+  </summary>
+  <pre style="font-family:Consolas,monospace;font-size:0.72rem;line-height:1.4;
+  background:var(--bg);padding:10px;border-radius:6px;overflow-x:auto;
+  border:1px solid var(--border);margin-top:6px;color:var(--fg)">{_html.escape(seq_display)}</pre>
+</details>
+
+{'<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent);font-size:0.85rem">▸ Cofactor / Metal-Binding Motifs (' + str(len(cof_motifs)) + ')</summary><div class="tbl-wrap"><table class="sd-table"><thead><tr><th>Motif</th><th>Position</th><th>Match</th><th>Description</th></tr></thead><tbody>' + cof_rows + '</tbody></table></div></details>' if cof_motifs else ''}
+
+{'<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent);font-size:0.85rem">▸ Disordered Regions (' + str(n_idr) + ')</summary><div class="tbl-wrap"><table class="sd-table"><thead><tr><th>Region</th><th>Length</th><th>Mean Score</th></tr></thead><tbody>' + idr_rows + '</tbody></table></div></details>' if idr_rows else ''}
+
+{'<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent);font-size:0.85rem">▸ Domain Architecture (' + str(domain_count) + ')</summary><div class="tbl-wrap"><table class="sd-table"><thead><tr><th>Domain</th><th>Region</th><th>Length</th></tr></thead><tbody>' + dom_rows + '</tbody></table></div></details>' if dom_rows else ''}
+
+<div style="margin-top:10px;font-size:0.78rem;color:var(--fg);opacity:0.7">
+  ε₂₈₀ = {ec.get('reduced', 0):,} M⁻¹cm⁻¹ (reduced) / {ec.get('oxidized', 0):,} M⁻¹cm⁻¹ (oxidized)
+  &middot; GRAVY = {char.get('gravy', 0):.3f}
+  &middot; Aromaticity = {char.get('aromaticity', 0):.3f}
+</div>"""
+
+
 # Step renderer dispatch table
 _STEP_RENDERERS: dict[str, Any] = {
+    "protein_characterization": _render_protein_characterization,
     "cysteine_scan": _render_cysteine_scan,
     "motif_scan": _render_motif_scan,
     "sequence_complexity": _render_sequence_complexity,

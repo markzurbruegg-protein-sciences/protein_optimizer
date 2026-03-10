@@ -5,6 +5,7 @@
 pipeline:
   steps:
     # ── Stage 1: Sequence Analysis ──
+    - protein_characterization
     - cysteine_scan
     - motif_scan
     - sequence_complexity
@@ -34,6 +35,16 @@ global:
   output_dir: ./run_proteins/jcDRM_results
 
 # ──────────────────────────── Tier 1 ────────────────────────────
+protein_characterization:
+  expression_host: ecoli
+  ph_range: [2.0, 12.0]
+  disorder_threshold: 0.5
+  signal_peptide_scan_length: 70
+  external_tools:
+    signalp: auto
+    iupred: auto
+    hmmscan: auto
+
 cysteine_scan:
   replacement_aas: ["S", "A"]
 

@@ -254,6 +254,7 @@ def _import_all_steps() -> None:
     """Import all step modules to trigger BaseStep.__init_subclass__ registration."""
     import importlib
     step_modules = [
+        "protein_optimizer.steps.protein_characterization",
         "protein_optimizer.steps.cysteine_scan",
         "protein_optimizer.steps.motif_scan",
         "protein_optimizer.steps.sequence_complexity",
