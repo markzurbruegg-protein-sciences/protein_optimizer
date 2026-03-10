@@ -49,6 +49,7 @@ Thumbs.db
 
 # Outputs
 results/
+outputs/
 *.pdb
 *.html
 !src/protein_optimizer/reporting/html_report.py
