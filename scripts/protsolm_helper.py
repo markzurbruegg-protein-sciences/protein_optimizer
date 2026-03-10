@@ -252,12 +252,15 @@ def compute_features_from_pdb(pdb_path: str) -> dict:
             sec_structures = ["-"] * len(aa_seq)
             rsa_values = [0.5] * len(aa_seq)
 
-    # pLDDT from B-factors
+    # pLDDT from B-factors — ProtSolM expects 0-1 scale (not 0-100)
     try:
         struct = bsio.load_structure(pdb_path, extra_fields=["b_factor"])
-        plddt = float(struct.b_factor.mean())
+        plddt_raw = float(struct.b_factor.mean())
+        # AlphaFold/Boltz store pLDDT in B-factor field on 0-100 scale;
+        # ProtSolM was trained with 0-1 scale values.
+        plddt = plddt_raw / 100.0 if plddt_raw > 1.0 else plddt_raw
     except Exception:
-        plddt = 70.0  # reasonable default
+        plddt = 0.70  # reasonable default (0-1 scale)
 
     length = len(aa_seq)
     if length == 0:
