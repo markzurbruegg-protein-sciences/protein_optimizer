@@ -6,6 +6,7 @@
 
 pipeline:
   steps:
+    # stage 0
     - protein_characterization
     - cysteine_scan
     - motif_scan
@@ -14,6 +15,7 @@ pipeline:
     - consensus_design
     - pssm_analysis
     - predict_structure
+    # advanced scoring and design
     - stability_ddg
     - disulfide_design
     - cavity_fill

@@ -324,10 +324,27 @@ def _compute_metrics(
         "ph_stable_range": char.get("ph_stable_range", []),
         "aggregation_regions": char.get("aggregation_regions", []),
         "aggregation_region_count": char.get("aggregation_region_count", 0),
+        # CamSol intrinsic profile data
+        "camsol_scores": char.get("camsol_scores", []),
+        "camsol_overall": char.get("camsol_overall", 0),
+        "camsol_patches": char.get("camsol_patches", []),
+        "camsol_patch_count": char.get("camsol_patch_count", 0),
+        # TANGO-like β-aggregation data
+        "tango_scores": char.get("tango_scores", []),
+        "tango_aprs": char.get("tango_aprs", []),
+        "tango_apr_count": char.get("tango_apr_count", 0),
+        "tango_overall_score": char.get("tango_overall_score", 0),
+        "tango_gatekeepers": char.get("tango_gatekeepers", []),
+        "tango_nucleation_cores": char.get("tango_nucleation_cores", []),
         "charge_symmetry": char.get("charge_symmetry", 0),
         "charged_fraction": char.get("charged_fraction", 0),
         "solubility_score": char.get("solubility_score", 0),
         "solubility_class": char.get("solubility_class", ""),
+        # Multi-method solubility ensemble
+        "solubility_ensemble": char.get("solubility_ensemble", 0),
+        "solubility_ensemble_class": char.get("solubility_ensemble_class", ""),
+        "solubility_ensemble_confidence": char.get("solubility_ensemble_confidence", ""),
+        "solubility_methods": char.get("solubility_methods", {}),
         "extinction_coefficient": char.get("extinction_coefficient", {}),
         "disulfide_potential": char.get("disulfide_potential", {}),
         "rare_codon_details": char.get("rare_codon_details", ""),
@@ -1152,6 +1169,80 @@ def _disorder_sparkline(scores: list[float], threshold: float = 0.5,
     return "".join(parts)
 
 
+def _camsol_sparkline(scores: list[float], width: int = 140, height: int = 20) -> str:
+    """Generate a CamSol solubility profile sparkline.
+
+    Positive (blue) = soluble, negative (red) = aggregation-prone.
+    """
+    if not scores:
+        return ""
+
+    n = len(scores)
+    bar_w = max(width / n, 0.5)
+    mid_y = height / 2
+
+    parts = [f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+             f'style="display:inline-block;vertical-align:middle;margin-left:6px" '
+             f'xmlns="http://www.w3.org/2000/svg">']
+
+    # Zero line
+    parts.append(f'<line x1="0" y1="{mid_y:.1f}" x2="{width}" y2="{mid_y:.1f}" '
+                 f'stroke="#6e7681" stroke-width="0.5" opacity="0.4"/>')
+
+    # Aggregation threshold line at -1.0
+    max_abs = max(abs(s) for s in scores) if scores else 1.0
+    max_abs = max(max_abs, 1.5)
+    thresh_y = mid_y + (1.0 / max_abs) * (height / 2 - 1)
+    parts.append(f'<line x1="0" y1="{thresh_y:.1f}" x2="{width}" y2="{thresh_y:.1f}" '
+                 f'stroke="#f85149" stroke-width="0.6" stroke-dasharray="2,2" opacity="0.5"/>')
+
+    for i, s in enumerate(scores):
+        x = (i / n) * width
+        bar_h = abs(s) / max_abs * (height / 2 - 1)
+        if s >= 0:
+            y = mid_y - bar_h
+            color = "#58a6ff"
+        else:
+            y = mid_y
+            color = "#f85149"
+        parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.2f}" '
+                     f'height="{bar_h:.1f}" fill="{color}" opacity="0.7"/>')
+
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _aggregation_sparkline(scores: list[float], threshold: float = 0.35,
+                           width: int = 140, height: int = 20) -> str:
+    """Generate a β-aggregation propensity profile sparkline."""
+    if not scores:
+        return ""
+
+    n = len(scores)
+    bar_w = max(width / n, 0.5)
+    max_score = max(max(scores), 0.5)
+
+    parts = [f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+             f'style="display:inline-block;vertical-align:middle;margin-left:6px" '
+             f'xmlns="http://www.w3.org/2000/svg">']
+
+    # Threshold line
+    ty = height - (threshold / max_score) * (height - 2) - 1
+    parts.append(f'<line x1="0" y1="{ty:.1f}" x2="{width}" y2="{ty:.1f}" '
+                 f'stroke="#f85149" stroke-width="0.6" stroke-dasharray="2,2" opacity="0.5"/>')
+
+    for i, s in enumerate(scores):
+        x = (i / n) * width
+        bh = (s / max_score) * (height - 2)
+        y = height - bh - 1
+        color = "#f85149" if s >= threshold else "#ffd93d" if s >= threshold * 0.7 else "#3fb950"
+        parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.2f}" '
+                     f'height="{bh:.1f}" fill="{color}" opacity="0.7"/>')
+
+    parts.append("</svg>")
+    return "".join(parts)
+
+
 # ── Characterization metric helpers (conditional rendering) ─────
 
 
@@ -1186,7 +1277,78 @@ def _char_solubility_metric(m: dict, _metric) -> str:
     if not label:
         return ""
     sol_css = "good" if label == "Soluble" else "warn" if label == "Borderline" else "bad"
-    return f'      {_metric("Solubility (E. coli)", f"{score:.0f}% ({label})", sol_css)}'
+    return f'      {_metric("Solubility (W-H)", f"{score:.0f}% ({label})", sol_css)}'
+
+
+def _char_camsol_metric(m: dict, _metric) -> str:
+    """Render CamSol intrinsic solubility metrics."""
+    overall = m.get("camsol_overall", 0)
+    patch_count = m.get("camsol_patch_count", 0)
+    camsol_scores = m.get("camsol_scores", [])
+    if not camsol_scores and not overall:
+        return ""
+    cs_css = "good" if overall > 0 else "warn" if overall > -0.5 else "bad"
+    parts = [_metric("CamSol Score", f"{overall:+.3f}", cs_css)]
+    if patch_count > 0:
+        patches = m.get("camsol_patches", [])
+        locs = ", ".join(f"{p['start']}-{p['end']}" for p in patches[:3])
+        p_css = "warn" if patch_count <= 2 else "bad"
+        parts.append(_metric("CamSol Agg. Patches", f"{patch_count} ({locs})", p_css))
+    if camsol_scores:
+        sparkline = _camsol_sparkline(camsol_scores)
+        parts.append(f'<div class="metric-row"><span class="label">CamSol Profile</span>{sparkline}</div>')
+    return '\n      '.join(f'      {p}' for p in parts)
+
+
+def _char_tango_metric(m: dict, _metric) -> str:
+    """Render TANGO-like β-aggregation metrics."""
+    apr_count = m.get("tango_apr_count", 0)
+    overall = m.get("tango_overall_score", 0)
+    tango_scores = m.get("tango_scores", [])
+    if not tango_scores and not apr_count:
+        return ""
+    t_css = "good" if apr_count == 0 else "warn" if apr_count <= 3 else "bad"
+    parts = [_metric("β-Agg. Regions", f"{apr_count} APR(s)", t_css)]
+    # Nucleation cores
+    cores = m.get("tango_nucleation_cores", [])
+    if cores:
+        core_text = ", ".join(f"{c['sequence']}({c['start']}-{c['end']})" for c in cores[:3])
+        parts.append(_metric("Nucleation Cores", core_text, "bad"))
+    # Gatekeeper analysis
+    gk = m.get("tango_gatekeepers", [])
+    if gk:
+        protected = sum(1 for g in gk if g.get("protected"))
+        total_gk = len(gk)
+        gk_css = "good" if protected == total_gk else "warn"
+        parts.append(_metric("Gatekeepers", f"{protected}/{total_gk} APRs protected", gk_css))
+    if tango_scores:
+        sparkline = _aggregation_sparkline(tango_scores)
+        parts.append(f'<div class="metric-row"><span class="label">β-Agg. Profile</span>{sparkline}</div>')
+    return '\n      '.join(f'      {p}' for p in parts)
+
+
+def _char_solubility_ensemble_metric(m: dict, _metric) -> str:
+    """Render multi-method solubility ensemble."""
+    ensemble_score = m.get("solubility_ensemble", 0)
+    ensemble_class = m.get("solubility_ensemble_class", "")
+    confidence = m.get("solubility_ensemble_confidence", "")
+    methods = m.get("solubility_methods", {})
+    if not ensemble_class:
+        return ""
+    e_css = "good" if ensemble_class == "Soluble" else "warn" if ensemble_class == "Borderline" else "bad"
+    parts = [_metric("Ensemble Solubility",
+                      f"{ensemble_score:.0f}% ({ensemble_class}, {confidence} conf.)", e_css)]
+    # Show individual method scores compactly
+    method_names = {"wilkinson_harrison": "W-H", "camsol": "CamSol", "swi": "SWI", "proso": "PROSO-like"}
+    method_strs = []
+    for key, display in method_names.items():
+        if key in methods:
+            s = methods[key].get("score", 0)
+            l = methods[key].get("label", "?")
+            method_strs.append(f"{display}: {s:.0f}%")
+    if method_strs:
+        parts.append(_metric("Method Scores", " | ".join(method_strs), ""))
+    return '\n      '.join(f'      {p}' for p in parts)
 
 
 def _char_disulfide_metric(m: dict, _metric) -> str:
@@ -1432,7 +1594,10 @@ def _hero_section(
       {_metric("Hydrophobic Patches", f"{m.get('agg_patches', 0)}", agg_css)}
       {_metric("Surface Patches (SAP)", f"{m.get('n_surface_patches', 0)}", "")}
 {_char_aggregation_metric(m, _metric)}
+{_char_camsol_metric(m, _metric)}
+{_char_tango_metric(m, _metric)}
 {_char_solubility_metric(m, _metric)}
+{_char_solubility_ensemble_metric(m, _metric)}
     </div>
 
     <div class="metric-group">

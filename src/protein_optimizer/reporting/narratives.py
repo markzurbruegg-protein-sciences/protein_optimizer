@@ -1067,7 +1067,9 @@ def _protein_characterization_narrative(name: str, result: StepResult) -> str:
     sol_score = char.get("solubility_score", 0)
     sol_label = char.get("solubility_class", "")
     disorder_frac = char.get("disorder_fraction", 0)
+    disorder_method = char.get("disorder_method", "heuristic")
     n_idr = len(char.get("disorder_regions", []))
+    disorder_regions = char.get("disorder_regions", [])
     domains = char.get("domains", [])
     domain_count = char.get("domain_count", 0)
     oligo = char.get("oligomeric_state", "")
@@ -1097,11 +1099,188 @@ def _protein_characterization_narrative(name: str, result: StepResult) -> str:
             f"<strong>pH {ph_range[0]:.1f} – {ph_range[1]:.1f}</strong>.</p>"
         )
 
-    # Solubility
-    lines.append(
-        f"<p>E. coli overexpression solubility prediction: "
-        f"<strong>{sol_label}</strong> ({sol_score:.0f}%).</p>"
-    )
+    # ── Enhanced Disorder Section ──
+    method_desc = {
+        "metapredict": "metapredict (bidirectional LSTM, Emenecker et al. 2021)",
+        "iupred3": "IUPred3 (energy-based predictor)",
+        "heuristic": "FoldIndex heuristic (Prilusky &amp; Biber 2005)",
+    }
+    disorder_tool = method_desc.get(disorder_method, disorder_method)
+
+    if n_idr > 0:
+        region_details = []
+        for r in disorder_regions[:5]:
+            region_details.append(
+                f"residues {r['start']}–{r['end']} ({r['length']} aa, "
+                f"mean score {r.get('mean_score', 0):.2f})"
+            )
+        region_list = "; ".join(region_details)
+        lines.append(
+            f"<p><strong>Intrinsically Disordered Regions:</strong> "
+            f"<strong>{n_idr} IDR(s)</strong> identified covering "
+            f"<strong>{disorder_frac * 100:.0f}%</strong> of the sequence, "
+            f"predicted using {disorder_tool}.</p>"
+            f"<p style='margin-left:1em;font-size:0.92em'>{region_list}.</p>"
+        )
+        if disorder_frac > 0.3:
+            lines.append(
+                "<p>⚠ High disorder content (&gt;30%) may cause difficulties with "
+                "crystallization and can lead to proteolytic degradation in "
+                "<em>E.&nbsp;coli</em>. Consider truncation constructs removing "
+                "terminal disordered tails, or co-expression with chaperones.</p>"
+            )
+        elif disorder_frac > 0.1:
+            lines.append(
+                "<p>Moderate disorder content detected. Short IDRs between domains "
+                "often serve as flexible linkers and are usually tolerated during "
+                "expression. Monitor for degradation products.</p>"
+            )
+    else:
+        lines.append(
+            f"<p>No significant intrinsically disordered regions detected "
+            f"(method: {disorder_tool}).</p>"
+        )
+
+    # ── Enhanced Aggregation Section ──
+    # CamSol
+    camsol_overall = char.get("camsol_overall", 0)
+    camsol_patches = char.get("camsol_patches", [])
+    camsol_patch_count = char.get("camsol_patch_count", 0)
+
+    # TANGO-like
+    tango_aprs = char.get("tango_aprs", [])
+    tango_apr_count = char.get("tango_apr_count", 0)
+    tango_gatekeepers = char.get("tango_gatekeepers", [])
+    tango_cores = char.get("tango_nucleation_cores", [])
+
+    if tango_apr_count > 0 or camsol_patch_count > 0:
+        lines.append("<p><strong>Aggregation Analysis:</strong></p>")
+
+        if camsol_overall != 0:
+            cs_verdict = ("favorable" if camsol_overall > 0
+                          else "moderately risky" if camsol_overall > -0.5
+                          else "high risk")
+            lines.append(
+                f"<p>CamSol intrinsic solubility score: <strong>{camsol_overall:+.3f}</strong> "
+                f"({cs_verdict}). "
+                f"Scores &gt;0 indicate intrinsic solubility; scores &lt;-1.0 indicate "
+                f"aggregation-prone regions (Sormanni et al., <em>J. Mol. Biol.</em> 2015).</p>"
+            )
+            if camsol_patches:
+                patch_details = ", ".join(
+                    f"residues {p['start']}–{p['end']} (score {p['mean_score']:+.2f})"
+                    for p in camsol_patches[:4]
+                )
+                lines.append(
+                    f"<p style='margin-left:1em;font-size:0.92em'>"
+                    f"<strong>{camsol_patch_count} aggregation-prone patch(es)</strong> "
+                    f"identified: {patch_details}.</p>"
+                )
+
+        if tango_apr_count > 0:
+            apr_details = ", ".join(
+                f"residues {a['start']}–{a['end']} ({a['sequence'][:12]}"
+                f"{'…' if len(a['sequence']) > 12 else ''}, score {a['mean_score']:.2f})"
+                for a in tango_aprs[:4]
+            )
+            lines.append(
+                f"<p>β-aggregation predictor (Zyggregator/AGGRESCAN methodology) "
+                f"identified <strong>{tango_apr_count} APR(s)</strong>: {apr_details}.</p>"
+            )
+
+            # Nucleation cores
+            if tango_cores:
+                core_details = ", ".join(
+                    f"<strong>{c['sequence']}</strong> (pos {c['start']}–{c['end']}, "
+                    f"score {c['score']:.2f})"
+                    for c in tango_cores[:3]
+                )
+                lines.append(
+                    f"<p style='margin-left:1em;font-size:0.92em'>"
+                    f"Nucleation cores (highest propensity subsequences): {core_details}.</p>"
+                )
+
+            # Gatekeeper analysis
+            if tango_gatekeepers:
+                protected = sum(1 for g in tango_gatekeepers if g.get("protected"))
+                unprotected = tango_apr_count - protected
+                if unprotected > 0:
+                    lines.append(
+                        f"<p>⚠ <strong>{unprotected} APR(s) lack adequate gatekeeper "
+                        f"residues</strong> (charged/proline flanking residues). Introducing "
+                        f"charged gatekeepers (K, R, D, E) adjacent to unprotected APRs "
+                        f"can reduce aggregation propensity.</p>"
+                    )
+                else:
+                    lines.append(
+                        f"<p>All {tango_apr_count} APR(s) are flanked by gatekeeper residues, "
+                        f"which should help suppress aggregation.</p>"
+                    )
+    else:
+        lines.append(
+            "<p>No significant aggregation-prone regions detected by CamSol or "
+            "β-aggregation analysis.</p>"
+        )
+
+    # ── Enhanced Solubility Section ──
+    ensemble_score = char.get("solubility_ensemble", 0)
+    ensemble_class = char.get("solubility_ensemble_class", "")
+    ensemble_conf = char.get("solubility_ensemble_confidence", "")
+    sol_methods = char.get("solubility_methods", {})
+
+    if ensemble_class:
+        lines.append("<p><strong>Solubility Prediction (Multi-Method Ensemble):</strong></p>")
+        lines.append(
+            f"<p>Ensemble prediction: <strong>{ensemble_class}</strong> "
+            f"({ensemble_score:.0f}%, {ensemble_conf} confidence), combining four "
+            f"complementary methods:</p>"
+        )
+
+        # Method breakdown table
+        lines.append('<table style="margin:0.5rem 0;font-size:0.9em">')
+        lines.append(
+            "<thead><tr><th>Method</th><th>Score</th><th>Prediction</th>"
+            "<th>Basis</th></tr></thead><tbody>"
+        )
+        method_info = {
+            "wilkinson_harrison": ("Wilkinson-Harrison", "Composition-based (E. coli)"),
+            "camsol": ("CamSol", "Intrinsic solubility (Sormanni et al.)"),
+            "swi": ("SWI", "Solubility-weighted index (Bhandari et al.)"),
+            "proso": ("PROSO-like", "Sequence features (logistic regression)"),
+        }
+        for key, (display_name, basis) in method_info.items():
+            if key in sol_methods:
+                m = sol_methods[key]
+                s = m.get("score", 0)
+                l = m.get("label", "?")
+                css = "good" if l == "Soluble" else "warn" if l == "Borderline" else "bad"
+                lines.append(
+                    f'<tr><td>{display_name}</td><td>{s:.0f}%</td>'
+                    f'<td class="{css}">{l}</td><td>{basis}</td></tr>'
+                )
+        lines.append("</tbody></table>")
+
+        # Actionable advice
+        if ensemble_class == "Insoluble":
+            lines.append(
+                "<p>⚠ Multiple methods predict poor solubility. Consider: "
+                "solubility-enhancing fusion tags (MBP, SUMO, TrxA), "
+                "lower expression temperature (16–20°C), co-expression with "
+                "chaperones (GroEL/ES, DnaK/J), or surface charge engineering "
+                "at identified aggregation hotspots.</p>"
+            )
+        elif ensemble_class == "Borderline":
+            lines.append(
+                "<p>Borderline solubility — expression optimization recommended. "
+                "Consider reducing temperature to 18–25°C, using a solubility tag, "
+                "or introducing charged surface mutations at APR-adjacent positions.</p>"
+            )
+    else:
+        # Fallback to simple solubility
+        lines.append(
+            f"<p>E. coli overexpression solubility prediction: "
+            f"<strong>{sol_label}</strong> ({sol_score:.0f}%).</p>"
+        )
 
     # Signal peptide
     if sp.get("detected"):
@@ -1111,16 +1290,6 @@ def _protein_characterization_narrative(name: str, result: StepResult) -> str:
             f"type: {sp.get('type', '?')}). Consider removing if targeting "
             f"cytoplasmic expression.</p>"
         )
-
-    # Disorder
-    if n_idr > 0:
-        lines.append(
-            f"<p><strong>{n_idr} intrinsically disordered region(s)</strong> "
-            f"identified, covering {disorder_frac * 100:.0f}% of the sequence. "
-            f"IDRs may affect crystallization and aggregation.</p>"
-        )
-    else:
-        lines.append("<p>No significant intrinsically disordered regions detected.</p>")
 
     # Domains
     if domain_count > 1:

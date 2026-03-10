@@ -1,9 +1,9 @@
 {
   "step_name": "consensus_design",
-  "timestamp": "2026-03-09T23:10:54.629665+00:00",
+  "timestamp": "2026-03-10T16:36:16.362993+00:00",
   "config_used": {
     "min_conservation": 0.3,
-    "max_mutations": 20,
+    "max_mutations": 15,
     "_global": {
       "protected_residues": [],
       "expression_host": "ecoli",
@@ -16,7 +16,7 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM",
-      "candidate_id": "e8a10dd8d5a2",
+      "candidate_id": "0f31cd902c39",
       "parent_id": null,
       "structure_path": null,
       "mutations": [],
@@ -27,6 +27,1652 @@
         "complexity_risk_total": 0.6
       },
       "metadata": {
+        "characterization": {
+          "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+          "length": 350,
+          "molecular_weight": 39550.244999999995,
+          "isoelectric_point": 7.884749748921452,
+          "extinction_coefficient": {
+            "oxidized": 62380,
+            "reduced": 61880
+          },
+          "aa_composition": {
+            "A": 0.054285714285714284,
+            "C": 0.025714285714285714,
+            "D": 0.05142857142857143,
+            "E": 0.054285714285714284,
+            "F": 0.04,
+            "G": 0.07714285714285714,
+            "H": 0.022857142857142857,
+            "I": 0.04,
+            "K": 0.04285714285714286,
+            "L": 0.11428571428571428,
+            "M": 0.02,
+            "N": 0.054285714285714284,
+            "P": 0.06571428571428571,
+            "Q": 0.025714285714285714,
+            "R": 0.07142857142857142,
+            "S": 0.04857142857142857,
+            "T": 0.04857142857142857,
+            "V": 0.08571428571428572,
+            "W": 0.022857142857142857,
+            "Y": 0.03428571428571429
+          },
+          "gravy": -0.19942857142857146,
+          "instability_index": 31.65831428571429,
+          "instability_label": "Stable",
+          "aliphatic_index": 90.45714285714286,
+          "aromaticity": 0.09714285714285714,
+          "cysteine_count": 9,
+          "cysteine_positions": [
+            69,
+            119,
+            123,
+            156,
+            267,
+            298,
+            311,
+            337,
+            345
+          ],
+          "disulfide_potential": {
+            "possible_pairs": 18,
+            "unpaired_cys": 0,
+            "pairs": [
+              [
+                69,
+                119
+              ],
+              [
+                69,
+                123
+              ],
+              [
+                69,
+                156
+              ],
+              [
+                119,
+                156
+              ],
+              [
+                119,
+                267
+              ],
+              [
+                123,
+                156
+              ],
+              [
+                123,
+                267
+              ],
+              [
+                156,
+                267
+              ],
+              [
+                156,
+                298
+              ],
+              [
+                267,
+                298
+              ]
+            ]
+          },
+          "rare_codon_count": 17,
+          "rare_codon_fraction": 0.0486,
+          "rare_codon_positions": [
+            {
+              "position": 48,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 69,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 107,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 108,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 111,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 119,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 123,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 156,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 159,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 163,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 267,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 268,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 269,
+              "aa": "W",
+              "rarity": 0.2
+            },
+            {
+              "position": 298,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 311,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 337,
+              "aa": "C",
+              "rarity": 0.3
+            },
+            {
+              "position": 345,
+              "aa": "C",
+              "rarity": 0.3
+            }
+          ],
+          "rare_codon_details": "17 rare-codon AAs (4.9%), WCM=24, 2 consecutive-rare runs",
+          "signal_peptide": {
+            "detected": false,
+            "method": "heuristic",
+            "type": null,
+            "cleavage_position": null,
+            "score": 1.064
+          },
+          "disorder_scores": [
+            0.809,
+            0.815,
+            0.822,
+            0.824,
+            0.797,
+            0.806,
+            0.794,
+            0.801,
+            0.77,
+            0.751,
+            0.73,
+            0.712,
+            0.693,
+            0.669,
+            0.645,
+            0.632,
+            0.608,
+            0.574,
+            0.551,
+            0.522,
+            0.496,
+            0.46,
+            0.423,
+            0.419,
+            0.382,
+            0.352,
+            0.315,
+            0.285,
+            0.265,
+            0.238,
+            0.221,
+            0.199,
+            0.181,
+            0.174,
+            0.156,
+            0.137,
+            0.13,
+            0.119,
+            0.109,
+            0.099,
+            0.09,
+            0.08,
+            0.072,
+            0.062,
+            0.053,
+            0.047,
+            0.041,
+            0.039,
+            0.036,
+            0.038,
+            0.038,
+            0.041,
+            0.041,
+            0.038,
+            0.034,
+            0.035,
+            0.034,
+            0.034,
+            0.033,
+            0.03,
+            0.033,
+            0.033,
+            0.032,
+            0.037,
+            0.04,
+            0.047,
+            0.051,
+            0.052,
+            0.052,
+            0.057,
+            0.063,
+            0.065,
+            0.068,
+            0.065,
+            0.067,
+            0.069,
+            0.07,
+            0.072,
+            0.074,
+            0.081,
+            0.081,
+            0.082,
+            0.082,
+            0.084,
+            0.086,
+            0.086,
+            0.08,
+            0.081,
+            0.084,
+            0.082,
+            0.08,
+            0.078,
+            0.077,
+            0.074,
+            0.073,
+            0.077,
+            0.078,
+            0.079,
+            0.075,
+            0.079,
+            0.078,
+            0.078,
+            0.075,
+            0.073,
+            0.07,
+            0.067,
+            0.064,
+            0.06,
+            0.062,
+            0.065,
+            0.064,
+            0.062,
+            0.068,
+            0.069,
+            0.068,
+            0.07,
+            0.067,
+            0.067,
+            0.062,
+            0.061,
+            0.057,
+            0.057,
+            0.053,
+            0.047,
+            0.049,
+            0.051,
+            0.05,
+            0.053,
+            0.054,
+            0.062,
+            0.06,
+            0.071,
+            0.069,
+            0.072,
+            0.074,
+            0.077,
+            0.076,
+            0.074,
+            0.075,
+            0.077,
+            0.074,
+            0.076,
+            0.075,
+            0.073,
+            0.072,
+            0.07,
+            0.069,
+            0.065,
+            0.062,
+            0.058,
+            0.054,
+            0.049,
+            0.045,
+            0.04,
+            0.037,
+            0.036,
+            0.033,
+            0.033,
+            0.036,
+            0.04,
+            0.04,
+            0.045,
+            0.047,
+            0.049,
+            0.053,
+            0.056,
+            0.055,
+            0.059,
+            0.062,
+            0.068,
+            0.07,
+            0.078,
+            0.092,
+            0.109,
+            0.129,
+            0.153,
+            0.177,
+            0.196,
+            0.214,
+            0.232,
+            0.246,
+            0.26,
+            0.267,
+            0.274,
+            0.273,
+            0.268,
+            0.274,
+            0.28,
+            0.282,
+            0.281,
+            0.281,
+            0.282,
+            0.274,
+            0.273,
+            0.263,
+            0.254,
+            0.24,
+            0.234,
+            0.215,
+            0.196,
+            0.184,
+            0.164,
+            0.144,
+            0.125,
+            0.112,
+            0.094,
+            0.081,
+            0.075,
+            0.061,
+            0.055,
+            0.05,
+            0.045,
+            0.04,
+            0.033,
+            0.03,
+            0.029,
+            0.025,
+            0.022,
+            0.02,
+            0.019,
+            0.023,
+            0.023,
+            0.022,
+            0.023,
+            0.031,
+            0.034,
+            0.035,
+            0.038,
+            0.042,
+            0.042,
+            0.041,
+            0.039,
+            0.037,
+            0.037,
+            0.035,
+            0.034,
+            0.035,
+            0.035,
+            0.032,
+            0.028,
+            0.027,
+            0.027,
+            0.023,
+            0.024,
+            0.022,
+            0.019,
+            0.016,
+            0.016,
+            0.016,
+            0.014,
+            0.013,
+            0.015,
+            0.015,
+            0.018,
+            0.017,
+            0.017,
+            0.014,
+            0.019,
+            0.018,
+            0.017,
+            0.019,
+            0.021,
+            0.022,
+            0.024,
+            0.025,
+            0.028,
+            0.034,
+            0.034,
+            0.038,
+            0.038,
+            0.037,
+            0.042,
+            0.041,
+            0.041,
+            0.041,
+            0.04,
+            0.04,
+            0.04,
+            0.04,
+            0.044,
+            0.043,
+            0.045,
+            0.043,
+            0.039,
+            0.035,
+            0.034,
+            0.033,
+            0.032,
+            0.03,
+            0.032,
+            0.033,
+            0.037,
+            0.042,
+            0.047,
+            0.063,
+            0.075,
+            0.091,
+            0.109,
+            0.122,
+            0.132,
+            0.152,
+            0.173,
+            0.181,
+            0.2,
+            0.215,
+            0.234,
+            0.259,
+            0.289,
+            0.315,
+            0.349,
+            0.367,
+            0.389,
+            0.414,
+            0.428,
+            0.442,
+            0.465,
+            0.491,
+            0.518,
+            0.515,
+            0.526,
+            0.53,
+            0.517,
+            0.511,
+            0.491,
+            0.461,
+            0.428,
+            0.399,
+            0.375,
+            0.342,
+            0.32,
+            0.294,
+            0.258,
+            0.229,
+            0.211,
+            0.184,
+            0.166,
+            0.156,
+            0.136,
+            0.137,
+            0.141,
+            0.127,
+            0.129,
+            0.134,
+            0.132,
+            0.132,
+            0.137,
+            0.134,
+            0.131,
+            0.109,
+            0.09
+          ],
+          "disorder_regions": [
+            {
+              "start": 1,
+              "end": 20,
+              "length": 20,
+              "mean_score": 0.716
+            },
+            {
+              "start": 318,
+              "end": 323,
+              "length": 6,
+              "mean_score": 0.52
+            }
+          ],
+          "disorder_fraction": 0.0743,
+          "disorder_method": "metapredict",
+          "domains": [
+            {
+              "name": "DNA_methylase",
+              "accession": "PF00145.24",
+              "start": 48,
+              "end": 77,
+              "evalue": 7.1e-13,
+              "score": 49.1
+            },
+            {
+              "name": "DNA_methylase",
+              "accession": "PF00145.24",
+              "start": 167,
+              "end": 212,
+              "evalue": 7.1e-13,
+              "score": 49.1
+            },
+            {
+              "name": "DNA_methylase",
+              "accession": "PF00145.24",
+              "start": 227,
+              "end": 341,
+              "evalue": 7.1e-13,
+              "score": 49.1
+            }
+          ],
+          "domain_count": 3,
+          "domain_method": "hmmscan/Pfam",
+          "oligomeric_state": "Possible dimer/trimer (coiled-coil)",
+          "oligomeric_evidence": [
+            "Coiled-coil region(s) detected (1 segment(s)); likely dimer/trimer"
+          ],
+          "cofactor_motifs": [],
+          "cofactor_summary": "None detected",
+          "estimated_tm": 64.4,
+          "tm_confidence": "moderate",
+          "ph_curve": [
+            [
+              2.0,
+              48.19
+            ],
+            [
+              2.2,
+              47.79
+            ],
+            [
+              2.4,
+              47.24
+            ],
+            [
+              2.6,
+              46.46
+            ],
+            [
+              2.8,
+              45.37
+            ],
+            [
+              3.0,
+              43.87
+            ],
+            [
+              3.2,
+              41.84
+            ],
+            [
+              3.4,
+              39.23
+            ],
+            [
+              3.6,
+              36.06
+            ],
+            [
+              3.8,
+              32.47
+            ],
+            [
+              4.0,
+              28.66
+            ],
+            [
+              4.2,
+              24.89
+            ],
+            [
+              4.4,
+              21.4
+            ],
+            [
+              4.6,
+              18.38
+            ],
+            [
+              4.8,
+              15.89
+            ],
+            [
+              5.0,
+              13.91
+            ],
+            [
+              5.2,
+              12.31
+            ],
+            [
+              5.4,
+              10.95
+            ],
+            [
+              5.6,
+              9.71
+            ],
+            [
+              5.8,
+              8.51
+            ],
+            [
+              6.0,
+              7.35
+            ],
+            [
+              6.2,
+              6.26
+            ],
+            [
+              6.4,
+              5.29
+            ],
+            [
+              6.6,
+              4.48
+            ],
+            [
+              6.8,
+              3.79
+            ],
+            [
+              7.0,
+              3.2
+            ],
+            [
+              7.2,
+              2.63
+            ],
+            [
+              7.4,
+              2.02
+            ],
+            [
+              7.6,
+              1.29
+            ],
+            [
+              7.8,
+              0.42
+            ],
+            [
+              8.0,
+              -0.6
+            ],
+            [
+              8.2,
+              -1.72
+            ],
+            [
+              8.4,
+              -2.85
+            ],
+            [
+              8.6,
+              -3.92
+            ],
+            [
+              8.8,
+              -4.9
+            ],
+            [
+              9.0,
+              -5.82
+            ],
+            [
+              9.2,
+              -6.76
+            ],
+            [
+              9.4,
+              -7.84
+            ],
+            [
+              9.6,
+              -9.18
+            ],
+            [
+              9.8,
+              -10.91
+            ],
+            [
+              10.0,
+              -13.13
+            ],
+            [
+              10.2,
+              -15.84
+            ],
+            [
+              10.4,
+              -18.96
+            ],
+            [
+              10.6,
+              -22.24
+            ],
+            [
+              10.8,
+              -25.41
+            ],
+            [
+              11.0,
+              -28.26
+            ],
+            [
+              11.2,
+              -30.72
+            ],
+            [
+              11.4,
+              -32.88
+            ],
+            [
+              11.6,
+              -34.91
+            ],
+            [
+              11.8,
+              -37.02
+            ],
+            [
+              12.0,
+              -39.38
+            ]
+          ],
+          "ph_stable_range": [
+            4.8,
+            10.2
+          ],
+          "aggregation_score": 0.0,
+          "aggregation_regions": [],
+          "aggregation_region_count": 0,
+          "camsol_scores": [
+            -0.171,
+            -0.113,
+            -0.061,
+            -0.035,
+            -0.046,
+            -0.061,
+            -0.2,
+            -0.249,
+            -0.279,
+            -0.4,
+            -0.4,
+            -0.306,
+            -0.087,
+            -0.057,
+            0.075,
+            -0.018,
+            -0.006,
+            -0.021,
+            -0.021,
+            -0.014,
+            -0.028,
+            -0.111,
+            0.011,
+            0.211,
+            0.219,
+            0.189,
+            -0.018,
+            -0.022,
+            0.079,
+            0.079,
+            -0.146,
+            -0.299,
+            -0.395,
+            -0.399,
+            -0.279,
+            -0.268,
+            -0.363,
+            -0.26,
+            -0.216,
+            -0.12,
+            -0.017,
+            -0.01,
+            -0.019,
+            -0.019,
+            -0.133,
+            -0.011,
+            -0.008,
+            -0.127,
+            -0.236,
+            -0.13,
+            -0.159,
+            -0.139,
+            -0.219,
+            -0.111,
+            -0.047,
+            0.054,
+            -0.054,
+            0.171,
+            0.188,
+            0.196,
+            0.196,
+            0.251,
+            0.24,
+            0.159,
+            -0.085,
+            -0.066,
+            -0.021,
+            -0.126,
+            -0.133,
+            -0.114,
+            0.057,
+            0.308,
+            0.376,
+            0.331,
+            0.264,
+            0.274,
+            0.177,
+            -0.025,
+            -0.134,
+            -0.245,
+            -0.172,
+            -0.084,
+            0.022,
+            -0.064,
+            0.049,
+            -0.067,
+            -0.067,
+            -0.073,
+            -0.207,
+            -0.316,
+            -0.241,
+            -0.33,
+            -0.229,
+            -0.204,
+            -0.201,
+            0.024,
+            0.027,
+            -0.078,
+            0.011,
+            -0.08,
+            0.004,
+            0.091,
+            0.079,
+            -0.035,
+            -0.055,
+            -0.055,
+            0.05,
+            -0.05,
+            -0.046,
+            -0.15,
+            0.069,
+            0.18,
+            0.27,
+            0.176,
+            0.301,
+            0.141,
+            0.033,
+            -0.07,
+            -0.07,
+            -0.233,
+            -0.244,
+            -0.267,
+            -0.201,
+            -0.086,
+            -0.001,
+            -0.071,
+            -0.012,
+            0.188,
+            0.308,
+            0.242,
+            0.358,
+            0.358,
+            0.445,
+            0.386,
+            0.394,
+            0.379,
+            0.41,
+            0.403,
+            0.301,
+            0.392,
+            0.465,
+            0.364,
+            0.154,
+            0.174,
+            -0.022,
+            -0.005,
+            -0.009,
+            -0.134,
+            -0.225,
+            -0.207,
+            -0.099,
+            0.098,
+            0.084,
+            0.102,
+            0.316,
+            0.297,
+            0.406,
+            0.168,
+            -0.068,
+            -0.224,
+            -0.456,
+            -0.543,
+            -0.324,
+            -0.324,
+            -0.089,
+            -0.032,
+            0.121,
+            0.245,
+            0.148,
+            0.141,
+            0.129,
+            0.134,
+            0.312,
+            0.271,
+            0.372,
+            0.398,
+            0.17,
+            0.04,
+            -0.066,
+            -0.295,
+            -0.243,
+            -0.236,
+            -0.156,
+            -0.026,
+            0.089,
+            0.209,
+            0.326,
+            0.318,
+            0.198,
+            0.074,
+            0.071,
+            0.194,
+            0.071,
+            0.177,
+            0.294,
+            0.263,
+            0.465,
+            0.465,
+            0.244,
+            0.247,
+            0.124,
+            0.016,
+            -0.074,
+            -0.158,
+            -0.242,
+            -0.036,
+            -0.039,
+            -0.109,
+            -0.131,
+            -0.097,
+            -0.123,
+            -0.163,
+            -0.269,
+            -0.346,
+            -0.338,
+            -0.226,
+            -0.034,
+            -0.065,
+            -0.061,
+            -0.05,
+            0.024,
+            0.096,
+            -0.124,
+            -0.207,
+            -0.262,
+            -0.264,
+            -0.264,
+            -0.369,
+            -0.489,
+            -0.359,
+            -0.389,
+            -0.413,
+            -0.301,
+            -0.309,
+            -0.194,
+            0.046,
+            -0.031,
+            -0.019,
+            0.027,
+            0.041,
+            0.158,
+            0.07,
+            -0.054,
+            -0.083,
+            0.021,
+            0.014,
+            0.101,
+            0.004,
+            0.004,
+            -0.076,
+            0.018,
+            -0.175,
+            0.006,
+            -0.193,
+            -0.204,
+            -0.008,
+            0.021,
+            0.044,
+            0.249,
+            0.17,
+            0.171,
+            0.116,
+            0.124,
+            0.139,
+            -0.009,
+            -0.246,
+            -0.156,
+            -0.041,
+            -0.001,
+            -0.099,
+            -0.034,
+            0.101,
+            0.211,
+            0.096,
+            -0.022,
+            -0.116,
+            -0.034,
+            -0.137,
+            -0.211,
+            -0.098,
+            -0.157,
+            -0.039,
+            0.072,
+            -0.116,
+            -0.007,
+            0.066,
+            0.066,
+            0.249,
+            0.174,
+            0.272,
+            0.372,
+            0.249,
+            0.173,
+            0.09,
+            -0.091,
+            -0.161,
+            -0.274,
+            -0.287,
+            -0.292,
+            -0.122,
+            -0.249,
+            -0.286,
+            -0.26,
+            -0.267,
+            -0.278,
+            -0.161,
+            -0.255,
+            -0.212,
+            -0.131,
+            -0.007,
+            -0.111,
+            -0.121,
+            -0.133,
+            -0.133,
+            -0.049,
+            0.089,
+            0.08,
+            0.206,
+            0.343,
+            0.449,
+            0.437,
+            0.349,
+            0.342,
+            0.342,
+            0.429,
+            0.422,
+            0.328,
+            0.339,
+            0.293,
+            0.049,
+            -0.085,
+            -0.081,
+            -0.246,
+            -0.286,
+            -0.178,
+            -0.153,
+            -0.101,
+            0.124,
+            -0.061,
+            -0.071,
+            0.06,
+            -0.114,
+            -0.143,
+            -0.131,
+            -0.24,
+            -0.041,
+            0.019,
+            -0.103,
+            -0.056,
+            0.121
+          ],
+          "camsol_overall": -0.008,
+          "camsol_patches": [],
+          "camsol_patch_count": 0,
+          "tango_scores": [
+            0.538,
+            0.335,
+            0.14,
+            0.139,
+            0.139,
+            0.154,
+            0.368,
+            0.332,
+            0.409,
+            0.807,
+            0.807,
+            0.538,
+            0.133,
+            0.126,
+            0.106,
+            0.149,
+            0.149,
+            0.211,
+            0.211,
+            0.188,
+            0.249,
+            0.369,
+            0.182,
+            0.039,
+            0.026,
+            0.024,
+            0.403,
+            0.401,
+            0.135,
+            0.135,
+            0.371,
+            0.455,
+            0.35,
+            0.297,
+            0.164,
+            0.176,
+            0.255,
+            0.227,
+            0.229,
+            0.333,
+            0.264,
+            0.242,
+            0.371,
+            0.371,
+            0.282,
+            0.163,
+            0.176,
+            0.228,
+            0.454,
+            0.225,
+            0.219,
+            0.295,
+            0.425,
+            0.16,
+            0.145,
+            0.075,
+            0.117,
+            0.025,
+            0.028,
+            0.036,
+            0.036,
+            0.002,
+            0.015,
+            0.048,
+            0.129,
+            0.091,
+            0.056,
+            0.307,
+            0.431,
+            0.41,
+            0.148,
+            0.024,
+            0.009,
+            0.031,
+            0.062,
+            0.064,
+            0.062,
+            0.092,
+            0.177,
+            0.361,
+            0.231,
+            0.162,
+            0.164,
+            0.185,
+            0.158,
+            0.185,
+            0.174,
+            0.154,
+            0.279,
+            0.502,
+            0.432,
+            0.502,
+            0.281,
+            0.327,
+            0.18,
+            0.045,
+            0.055,
+            0.163,
+            0.096,
+            0.308,
+            0.056,
+            0.034,
+            0.047,
+            0.066,
+            0.069,
+            0.069,
+            0.049,
+            0.056,
+            0.048,
+            0.16,
+            0.049,
+            0.042,
+            0.04,
+            0.059,
+            0.042,
+            0.075,
+            0.079,
+            0.18,
+            0.18,
+            0.535,
+            0.566,
+            0.711,
+            0.542,
+            0.422,
+            0.276,
+            0.494,
+            0.347,
+            0.027,
+            0.024,
+            0.055,
+            0.058,
+            0.058,
+            0.041,
+            0.045,
+            0.039,
+            0.025,
+            0.021,
+            0.001,
+            0.001,
+            0.0,
+            0.0,
+            0.0,
+            0.01,
+            0.01,
+            0.148,
+            0.152,
+            0.159,
+            0.243,
+            0.574,
+            0.574,
+            0.309,
+            0.055,
+            0.161,
+            0.142,
+            0.042,
+            0.03,
+            0.015,
+            0.042,
+            0.1,
+            0.106,
+            0.4,
+            0.68,
+            0.365,
+            0.365,
+            0.098,
+            0.098,
+            0.079,
+            0.038,
+            0.057,
+            0.037,
+            0.025,
+            0.018,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.01,
+            0.174,
+            0.348,
+            0.806,
+            0.475,
+            0.445,
+            0.176,
+            0.048,
+            0.044,
+            0.041,
+            0.018,
+            0.025,
+            0.028,
+            0.043,
+            0.134,
+            0.03,
+            0.134,
+            0.031,
+            0.028,
+            0.054,
+            0.034,
+            0.034,
+            0.047,
+            0.031,
+            0.051,
+            0.14,
+            0.259,
+            0.408,
+            0.682,
+            0.196,
+            0.197,
+            0.348,
+            0.471,
+            0.283,
+            0.186,
+            0.155,
+            0.398,
+            0.65,
+            0.62,
+            0.236,
+            0.074,
+            0.327,
+            0.291,
+            0.233,
+            0.035,
+            0.015,
+            0.306,
+            0.425,
+            0.554,
+            0.59,
+            0.647,
+            0.87,
+            1.058,
+            0.768,
+            0.912,
+            0.928,
+            0.705,
+            0.725,
+            0.605,
+            0.147,
+            0.421,
+            0.525,
+            0.478,
+            0.25,
+            0.061,
+            0.164,
+            0.34,
+            0.355,
+            0.074,
+            0.074,
+            0.07,
+            0.078,
+            0.101,
+            0.34,
+            0.096,
+            0.605,
+            0.128,
+            0.661,
+            0.785,
+            0.261,
+            0.261,
+            0.142,
+            0.036,
+            0.064,
+            0.064,
+            0.075,
+            0.095,
+            0.077,
+            0.094,
+            0.23,
+            0.103,
+            0.073,
+            0.078,
+            0.172,
+            0.169,
+            0.147,
+            0.124,
+            0.249,
+            0.256,
+            0.29,
+            0.171,
+            0.546,
+            0.82,
+            0.557,
+            0.809,
+            0.455,
+            0.088,
+            0.443,
+            0.099,
+            0.068,
+            0.068,
+            0.031,
+            0.038,
+            0.02,
+            0.013,
+            0.027,
+            0.035,
+            0.057,
+            0.239,
+            0.203,
+            0.474,
+            0.604,
+            0.568,
+            0.18,
+            0.548,
+            0.653,
+            0.72,
+            0.72,
+            0.72,
+            0.513,
+            0.699,
+            0.625,
+            0.474,
+            0.204,
+            0.301,
+            0.402,
+            0.422,
+            0.48,
+            0.223,
+            0.131,
+            0.035,
+            0.01,
+            0.014,
+            0.006,
+            0.006,
+            0.021,
+            0.001,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.025,
+            0.071,
+            0.088,
+            0.359,
+            0.528,
+            0.247,
+            0.293,
+            0.329,
+            0.07,
+            0.365,
+            0.62,
+            0.278,
+            0.641,
+            0.641,
+            0.542,
+            0.807,
+            0.282,
+            0.091,
+            0.351,
+            0.2,
+            0.106
+          ],
+          "tango_aprs": [
+            {
+              "start": 120,
+              "end": 124,
+              "length": 5,
+              "sequence": "LQTCV",
+              "mean_score": 0.555,
+              "peak_score": 0.711
+            },
+            {
+              "start": 224,
+              "end": 235,
+              "length": 12,
+              "sequence": "GGINVLSLFSGI",
+              "mean_score": 0.732,
+              "peak_score": 1.058
+            },
+            {
+              "start": 278,
+              "end": 282,
+              "length": 5,
+              "sequence": "LIDIV",
+              "mean_score": 0.637,
+              "peak_score": 0.82
+            },
+            {
+              "start": 301,
+              "end": 309,
+              "length": 9,
+              "sequence": "GFDLVVGGS",
+              "mean_score": 0.63,
+              "peak_score": 0.72
+            }
+          ],
+          "tango_apr_count": 4,
+          "tango_overall_score": 0.0886,
+          "tango_gatekeepers": [
+            {
+              "apr_start": 224,
+              "apr_end": 235,
+              "gatekeepers": [
+                {
+                  "position": 223,
+                  "aa": "P",
+                  "side": "N-terminal"
+                }
+              ],
+              "protected": false
+            },
+            {
+              "apr_start": 278,
+              "apr_end": 282,
+              "gatekeepers": [
+                {
+                  "position": 283,
+                  "aa": "D",
+                  "side": "C-terminal"
+                }
+              ],
+              "protected": false
+            },
+            {
+              "apr_start": 301,
+              "apr_end": 309,
+              "gatekeepers": [
+                {
+                  "position": 310,
+                  "aa": "P",
+                  "side": "C-terminal"
+                }
+              ],
+              "protected": false
+            }
+          ],
+          "tango_nucleation_cores": [
+            {
+              "start": 120,
+              "end": 124,
+              "sequence": "LQTCV",
+              "score": 0.555
+            },
+            {
+              "start": 228,
+              "end": 235,
+              "sequence": "VLSLFSGI",
+              "score": 0.907
+            },
+            {
+              "start": 278,
+              "end": 282,
+              "sequence": "LIDIV",
+              "score": 0.637
+            },
+            {
+              "start": 303,
+              "end": 309,
+              "sequence": "DLVVGGS",
+              "score": 0.674
+            }
+          ],
+          "charge_symmetry": 0.0041,
+          "charged_fraction": 0.2429,
+          "positive_fraction": 0.1371,
+          "negative_fraction": 0.1057,
+          "net_charge_7": 3.2,
+          "solubility_score": 50.1,
+          "solubility_class": "Borderline",
+          "solubility_ensemble": 47.0,
+          "solubility_ensemble_class": "Borderline",
+          "solubility_ensemble_confidence": "high",
+          "solubility_methods": {
+            "wilkinson_harrison": {
+              "score": 50.1,
+              "label": "Borderline"
+            },
+            "camsol": {
+              "score": 49.8,
+              "raw_score": -0.008,
+              "label": "Borderline"
+            },
+            "swi": {
+              "score": 33.3,
+              "label": "Insoluble",
+              "details": "Helpers: R(+0.037), D(+0.029); Hurters: L(-0.046)"
+            },
+            "proso": {
+              "score": 56.3,
+              "label": "Borderline"
+            }
+          }
+        },
         "motif_hits": [
           {
             "category": "deamidation",
@@ -169,7 +1815,7 @@
         ],
         "homologs_fasta": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/jcDRM_homologs.fasta",
         "msa_fasta": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/jcDRM_msa.fasta",
-        "num_homologs": 500,
+        "num_homologs": 1000,
         "homolog_sequences": [
           "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
           "LHLPNPMIGFGVPTESDQITQRTLPEAATGPPYFYYENVALAPKGVWNTISRFLYDVEPEFVDSKYFCAAARKRGYIHNLPIENRFPLLPFPPRTIHEAFPLTRKWWPSWDTRTKLNCLQTCIGSARLTERIRKALERYDDEPPLSVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLFGFPRNHTRGGGISRTDRYKSLGNSFQVDTVAYHLSVLKDMFPDGINLLSLFSGIGGAEVALHRLGIPLKNVVAVEKSEVNRNIVRSWWEQTNQRGNLIDIPDVQELNGDRLEQLMNRFGGFDLVVGGSPCNNLTGSNRHHRDGLEGKDSSLFFDYCRILDLVKCITAR",
@@ -228,8 +1874,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_A204N",
-      "candidate_id": "bd11331700df",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "3aebaae219f0",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -237,43 +1883,16 @@
           "wt": "A",
           "mut": "N",
           "source_step": "consensus_design",
-          "score": 0.8450704225352113,
+          "score": 0.7271428571428571,
           "metadata": {
-            "conservation": 0.8450704225352113,
-            "wt_frequency": 0.002012072434607646,
-            "column_depth": 497
+            "conservation": 0.7271428571428571,
+            "wt_frequency": 0.0014285714285714286,
+            "column_depth": 700
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.8450704225352113
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_A312N",
-      "candidate_id": "93697ea829e3",
-      "parent_id": "e8a10dd8d5a2",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 312,
-          "wt": "A",
-          "mut": "N",
-          "source_step": "consensus_design",
-          "score": 0.8432203389830508,
-          "metadata": {
-            "conservation": 0.8432203389830508,
-            "wt_frequency": 0.006355932203389831,
-            "column_depth": 472
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.8432203389830508
+        "consensus_conservation": 0.7271428571428571
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -282,8 +1901,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPKGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_R45K",
-      "candidate_id": "38c4053d7dd3",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "72322ee9faa6",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -291,16 +1910,16 @@
           "wt": "R",
           "mut": "K",
           "source_step": "consensus_design",
-          "score": 0.7672064777327935,
+          "score": 0.6738816738816739,
           "metadata": {
-            "conservation": 0.7672064777327935,
-            "wt_frequency": 0.038461538461538464,
-            "column_depth": 494
+            "conservation": 0.6738816738816739,
+            "wt_frequency": 0.047619047619047616,
+            "column_depth": 693
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.7672064777327935
+        "consensus_conservation": 0.6738816738816739
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -309,8 +1928,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRS",
       "name": "jcDRM_T350S",
-      "candidate_id": "b8d34c528935",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "bac74cbdaa5d",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -318,43 +1937,16 @@
           "wt": "T",
           "mut": "S",
           "source_step": "consensus_design",
-          "score": 0.72,
+          "score": 0.6578947368421053,
           "metadata": {
-            "conservation": 0.72,
-            "wt_frequency": 0.28,
-            "column_depth": 50
+            "conservation": 0.6578947368421053,
+            "wt_frequency": 0.25,
+            "column_depth": 76
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.72
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_V306I",
-      "candidate_id": "89ea7f8b35b8",
-      "parent_id": "e8a10dd8d5a2",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 306,
-          "wt": "V",
-          "mut": "I",
-          "source_step": "consensus_design",
-          "score": 0.7110655737704918,
-          "metadata": {
-            "conservation": 0.7110655737704918,
-            "wt_frequency": 0.28688524590163933,
-            "column_depth": 488
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.7110655737704918
+        "consensus_conservation": 0.6578947368421053
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -363,8 +1955,8 @@
     {
       "sequence": "LLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_M1L",
-      "candidate_id": "93a8789b3f29",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "9197dd890a96",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -372,43 +1964,70 @@
           "wt": "M",
           "mut": "L",
           "source_step": "consensus_design",
-          "score": 0.6451612903225806,
+          "score": 0.6338028169014085,
           "metadata": {
-            "conservation": 0.6451612903225806,
-            "wt_frequency": 0.3548387096774194,
-            "column_depth": 62
+            "conservation": 0.6338028169014085,
+            "wt_frequency": 0.352112676056338,
+            "column_depth": 71
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.6451612903225806
+        "consensus_conservation": 0.6338028169014085
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFYDYCRILDLVKCIMTRT",
-      "name": "jcDRM_F334Y",
-      "candidate_id": "060c78d004f0",
-      "parent_id": "e8a10dd8d5a2",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_V306I",
+      "candidate_id": "c17d76fa3ec6",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
-          "position": 334,
-          "wt": "F",
-          "mut": "Y",
+          "position": 306,
+          "wt": "V",
+          "mut": "I",
           "source_step": "consensus_design",
-          "score": 0.6348195329087049,
+          "score": 0.6266195524146054,
           "metadata": {
-            "conservation": 0.6348195329087049,
-            "wt_frequency": 0.2802547770700637,
-            "column_depth": 471
+            "conservation": 0.6266195524146054,
+            "wt_frequency": 0.2661955241460542,
+            "column_depth": 849
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.6348195329087049
+        "consensus_conservation": 0.6266195524146054
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_A312N",
+      "candidate_id": "2dc6b5efe4cd",
+      "parent_id": "0f31cd902c39",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 312,
+          "wt": "A",
+          "mut": "N",
+          "source_step": "consensus_design",
+          "score": 0.6211562115621156,
+          "metadata": {
+            "conservation": 0.6211562115621156,
+            "wt_frequency": 0.006150061500615006,
+            "column_depth": 813
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.6211562115621156
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -417,8 +2036,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRFPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_Y87F",
-      "candidate_id": "828cb3798370",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "91ca581f89f8",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -426,151 +2045,16 @@
           "wt": "Y",
           "mut": "F",
           "source_step": "consensus_design",
-          "score": 0.6192384769539078,
+          "score": 0.5972413793103448,
           "metadata": {
-            "conservation": 0.6192384769539078,
-            "wt_frequency": 0.07214428857715431,
-            "column_depth": 499
+            "conservation": 0.5972413793103448,
+            "wt_frequency": 0.05931034482758621,
+            "column_depth": 725
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.6192384769539078
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDIEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_V58I",
-      "candidate_id": "62afe33d55b5",
-      "parent_id": "e8a10dd8d5a2",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 58,
-          "wt": "V",
-          "mut": "I",
-          "source_step": "consensus_design",
-          "score": 0.6061224489795919,
-          "metadata": {
-            "conservation": 0.6061224489795919,
-            "wt_frequency": 0.33877551020408164,
-            "column_depth": 490
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.6061224489795919
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYIHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_V78I",
-      "candidate_id": "ce5a93d6b59e",
-      "parent_id": "e8a10dd8d5a2",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 78,
-          "wt": "V",
-          "mut": "I",
-          "source_step": "consensus_design",
-          "score": 0.578,
-          "metadata": {
-            "conservation": 0.578,
-            "wt_frequency": 0.394,
-            "column_depth": 500
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.578
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRSWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_C267S",
-      "candidate_id": "a88949d6e82d",
-      "parent_id": "e8a10dd8d5a2",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 267,
-          "wt": "C",
-          "mut": "S",
-          "source_step": "consensus_design",
-          "score": 0.5503080082135524,
-          "metadata": {
-            "conservation": 0.5503080082135524,
-            "wt_frequency": 0.06776180698151951,
-            "column_depth": 487
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.5503080082135524
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTERIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_D131E",
-      "candidate_id": "bac117f53de2",
-      "parent_id": "e8a10dd8d5a2",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 131,
-          "wt": "D",
-          "mut": "E",
-          "source_step": "consensus_design",
-          "score": 0.54,
-          "metadata": {
-            "conservation": 0.54,
-            "wt_frequency": 0.276,
-            "column_depth": 500
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.54
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGISRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_L193I",
-      "candidate_id": "a4ce14bd7384",
-      "parent_id": "e8a10dd8d5a2",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 193,
-          "wt": "L",
-          "mut": "I",
-          "source_step": "consensus_design",
-          "score": 0.5393939393939394,
-          "metadata": {
-            "conservation": 0.5393939393939394,
-            "wt_frequency": 0.06666666666666667,
-            "column_depth": 495
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.5393939393939394
+        "consensus_conservation": 0.5972413793103448
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -579,8 +2063,8 @@
     {
       "sequence": "MLRLPNPMIGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_V9I",
-      "candidate_id": "861c9dd338ba",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "0f90dcd4ce9c",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -588,70 +2072,70 @@
           "wt": "V",
           "mut": "I",
           "source_step": "consensus_design",
-          "score": 0.5255813953488372,
+          "score": 0.575809199318569,
           "metadata": {
-            "conservation": 0.5255813953488372,
-            "wt_frequency": 0.3558139534883721,
-            "column_depth": 430
+            "conservation": 0.575809199318569,
+            "wt_frequency": 0.31175468483816016,
+            "column_depth": 587
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.5255813953488372
+        "consensus_conservation": 0.575809199318569
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKYVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_F151Y",
-      "candidate_id": "985c1e6e7c74",
-      "parent_id": "e8a10dd8d5a2",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYIHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_V78I",
+      "candidate_id": "cb4c3b4ad7c0",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
-          "position": 151,
-          "wt": "F",
-          "mut": "Y",
+          "position": 78,
+          "wt": "V",
+          "mut": "I",
           "source_step": "consensus_design",
-          "score": 0.5089820359281437,
+          "score": 0.5739484396200815,
           "metadata": {
-            "conservation": 0.5089820359281437,
-            "wt_frequency": 0.1437125748502994,
-            "column_depth": 501
+            "conservation": 0.5739484396200815,
+            "wt_frequency": 0.34328358208955223,
+            "column_depth": 737
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.5089820359281437
+        "consensus_conservation": 0.5739484396200815
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEAFPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_L101F",
-      "candidate_id": "871ab7423fc1",
-      "parent_id": "e8a10dd8d5a2",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDIEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_V58I",
+      "candidate_id": "7c465fad8428",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
-          "position": 101,
-          "wt": "L",
-          "mut": "F",
+          "position": 58,
+          "wt": "V",
+          "mut": "I",
           "source_step": "consensus_design",
-          "score": 0.5050100200400801,
+          "score": 0.548431105047749,
           "metadata": {
-            "conservation": 0.5050100200400801,
-            "wt_frequency": 0.3486973947895792,
-            "column_depth": 499
+            "conservation": 0.548431105047749,
+            "wt_frequency": 0.35743519781718963,
+            "column_depth": 733
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.5050100200400801
+        "consensus_conservation": 0.548431105047749
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -660,8 +2144,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNILRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_M265L",
-      "candidate_id": "3e36893a1817",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "cce0bd01a0ef",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -669,107 +2153,134 @@
           "wt": "M",
           "mut": "L",
           "source_step": "consensus_design",
-          "score": 0.4989733059548255,
+          "score": 0.5435323383084577,
           "metadata": {
-            "conservation": 0.4989733059548255,
-            "wt_frequency": 0.0513347022587269,
-            "column_depth": 487
+            "conservation": 0.5435323383084577,
+            "wt_frequency": 0.036069651741293535,
+            "column_depth": 804
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.4989733059548255
+        "consensus_conservation": 0.5435323383084577
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLINCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_M296I",
-      "candidate_id": "496ae3279790",
-      "parent_id": "e8a10dd8d5a2",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTERIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_D131E",
+      "candidate_id": "59b2cf5002f2",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
-          "position": 296,
-          "wt": "M",
-          "mut": "I",
+          "position": 131,
+          "wt": "D",
+          "mut": "E",
           "source_step": "consensus_design",
-          "score": 0.48155737704918034,
+          "score": 0.5380645161290323,
           "metadata": {
-            "conservation": 0.48155737704918034,
-            "wt_frequency": 0.3237704918032787,
-            "column_depth": 488
+            "conservation": 0.5380645161290323,
+            "wt_frequency": 0.25290322580645164,
+            "column_depth": 775
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.48155737704918034
+        "consensus_conservation": 0.5380645161290323
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVASAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_G125A",
-      "candidate_id": "76f0ad4f8827",
-      "parent_id": "e8a10dd8d5a2",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFYDYCRILDLVKCIMTRT",
+      "name": "jcDRM_F334Y",
+      "candidate_id": "2537229d36b3",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
-          "position": 125,
-          "wt": "G",
-          "mut": "A",
+          "position": 334,
+          "wt": "F",
+          "mut": "Y",
           "source_step": "consensus_design",
-          "score": 0.4647887323943662,
+          "score": 0.5136540962288687,
           "metadata": {
-            "conservation": 0.4647887323943662,
-            "wt_frequency": 0.4507042253521127,
-            "column_depth": 497
+            "conservation": 0.5136540962288687,
+            "wt_frequency": 0.3068920676202861,
+            "column_depth": 769
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.4647887323943662
+        "consensus_conservation": 0.5136540962288687
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGKNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_R166K",
-      "candidate_id": "f3f0d847e2da",
-      "parent_id": "e8a10dd8d5a2",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIENRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_Q84E",
+      "candidate_id": "9f22a3d907ea",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
-          "position": 166,
-          "wt": "R",
-          "mut": "K",
+          "position": 84,
+          "wt": "Q",
+          "mut": "E",
           "source_step": "consensus_design",
-          "score": 0.4468937875751503,
+          "score": 0.4986413043478261,
           "metadata": {
-            "conservation": 0.4468937875751503,
-            "wt_frequency": 0.30060120240480964,
-            "column_depth": 499
+            "conservation": 0.4986413043478261,
+            "wt_frequency": 0.09510869565217392,
+            "column_depth": 736
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.4468937875751503
+        "consensus_conservation": 0.4986413043478261
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPKGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRS",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKYVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_F151Y",
+      "candidate_id": "4d21ae1f5900",
+      "parent_id": "0f31cd902c39",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 151,
+          "wt": "F",
+          "mut": "Y",
+          "source_step": "consensus_design",
+          "score": 0.4796854521625164,
+          "metadata": {
+            "conservation": 0.4796854521625164,
+            "wt_frequency": 0.10484927916120576,
+            "column_depth": 763
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.4796854521625164
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "LLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPKGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRS",
       "name": "jcDRM_consensus_top5",
-      "candidate_id": "2c0dd653194a",
-      "parent_id": "e8a10dd8d5a2",
+      "candidate_id": "41ccbbcb0496",
+      "parent_id": "0f31cd902c39",
       "structure_path": null,
       "mutations": [
         {
@@ -777,23 +2288,11 @@
           "wt": "A",
           "mut": "N",
           "source_step": "consensus_design",
-          "score": 0.8450704225352113,
+          "score": 0.7271428571428571,
           "metadata": {
-            "conservation": 0.8450704225352113,
-            "wt_frequency": 0.002012072434607646,
-            "column_depth": 497
-          }
-        },
-        {
-          "position": 312,
-          "wt": "A",
-          "mut": "N",
-          "source_step": "consensus_design",
-          "score": 0.8432203389830508,
-          "metadata": {
-            "conservation": 0.8432203389830508,
-            "wt_frequency": 0.006355932203389831,
-            "column_depth": 472
+            "conservation": 0.7271428571428571,
+            "wt_frequency": 0.0014285714285714286,
+            "column_depth": 700
           }
         },
         {
@@ -801,11 +2300,11 @@
           "wt": "R",
           "mut": "K",
           "source_step": "consensus_design",
-          "score": 0.7672064777327935,
+          "score": 0.6738816738816739,
           "metadata": {
-            "conservation": 0.7672064777327935,
-            "wt_frequency": 0.038461538461538464,
-            "column_depth": 494
+            "conservation": 0.6738816738816739,
+            "wt_frequency": 0.047619047619047616,
+            "column_depth": 693
           }
         },
         {
@@ -813,11 +2312,23 @@
           "wt": "T",
           "mut": "S",
           "source_step": "consensus_design",
-          "score": 0.72,
+          "score": 0.6578947368421053,
           "metadata": {
-            "conservation": 0.72,
-            "wt_frequency": 0.28,
-            "column_depth": 50
+            "conservation": 0.6578947368421053,
+            "wt_frequency": 0.25,
+            "column_depth": 76
+          }
+        },
+        {
+          "position": 1,
+          "wt": "M",
+          "mut": "L",
+          "source_step": "consensus_design",
+          "score": 0.6338028169014085,
+          "metadata": {
+            "conservation": 0.6338028169014085,
+            "wt_frequency": 0.352112676056338,
+            "column_depth": 71
           }
         },
         {
@@ -825,16 +2336,16 @@
           "wt": "V",
           "mut": "I",
           "source_step": "consensus_design",
-          "score": 0.7110655737704918,
+          "score": 0.6266195524146054,
           "metadata": {
-            "conservation": 0.7110655737704918,
-            "wt_frequency": 0.28688524590163933,
-            "column_depth": 488
+            "conservation": 0.6266195524146054,
+            "wt_frequency": 0.2661955241460542,
+            "column_depth": 849
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 3.8865628130215475
+        "consensus_conservation": 3.3193416371826503
       },
       "metadata": {
         "derived_from": "jcDRM"
