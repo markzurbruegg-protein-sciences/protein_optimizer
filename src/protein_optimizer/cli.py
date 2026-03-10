@@ -243,10 +243,21 @@ def rank(input_path: str, output_path: str | None, score_key: str | None, top_n:
               help="Directory containing step result JSON files.")
 @click.option("-o", "--output", "output_path", type=click.Path(), default="report.html",
               help="Output HTML report path.")
-def report(results_dir: str, output_path: str) -> None:
-    """Generate an HTML report from pipeline results."""
-    from protein_optimizer.reporting.html_report import generate_html_report
+@click.option("--pdb", "pdb_path", type=click.Path(), default=None,
+              help="Optional PDB/CIF file for 3D structure viewer in v2 report.")
+@click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
+              help="Pipeline YAML config used for the run.")
+def report(results_dir: str, output_path: str, pdb_path: str | None,
+           config_path: str | None) -> None:
+    """Generate an HTML report from pipeline results.
 
+    Uses the v2 enhanced report (3D viewer, metrics, exec summary) with
+    automatic fallback to the v1 basic report.
+
+    \b
+    Usage:  protein-opt report -d run_proteins/jcDRM_results/ -o report.html
+            protein-opt report -d results/ --pdb structures/protein.pdb
+    """
     results_path = Path(results_dir)
     results = {}
     for json_file in sorted(results_path.glob("*.json")):
@@ -260,5 +271,40 @@ def report(results_dir: str, output_path: str) -> None:
         console.print("[bold red]No valid result files found.[/]")
         return
 
-    generate_html_report(results=results, output_path=output_path)
-    console.print(f"[bold green]✓ Report generated: {output_path}[/]")
+    config = load_config(config_path)
+
+    # Auto-detect PDB if not provided: look in structures/ sub-dir
+    if pdb_path is None:
+        struct_dir = results_path / "structures"
+        for ext in ("*.pdb", "*.PDB", "*.cif", "*.CIF"):
+            pdbs = list(struct_dir.glob(ext)) if struct_dir.is_dir() else []
+            if pdbs:
+                pdb_path = str(pdbs[0])
+                break
+
+    # Derive a report title from the parent candidate name
+    final_result = list(results.values())[-1] if results else None
+    parent_name = next(
+        (c.name for c in (final_result.candidates if final_result else []) if c.parent_id is None),
+        "",
+    )
+    report_title = f"{parent_name} — Protein Optimization Report" if parent_name else "Protein Optimization Report"
+
+    # Try v2 first, fall back to v1
+    try:
+        from protein_optimizer.reporting.report_v2 import generate_report_v2
+        generate_report_v2(
+            results=results,
+            output_path=output_path,
+            pdb_path=pdb_path,
+            title=report_title,
+            config=config,
+        )
+        console.print(f"[bold green]✓ Report (v2) generated: {output_path}[/]")
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning("v2 report failed, falling back to v1", exc_info=True)
+        console.print(f"[yellow]v2 report failed ({e}), falling back to v1…[/]")
+        from protein_optimizer.reporting.html_report import generate_html_report
+        generate_html_report(results=results, output_path=output_path, config=config)
+        console.print(f"[bold green]✓ Report (v1) generated: {output_path}[/]")
