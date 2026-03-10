@@ -64,6 +64,18 @@ _CKPT_URLS = {
 }
 
 
+# ── Device selection ─────────────────────────────────────────────
+
+if not torch.cuda.is_available():
+    raise RuntimeError(
+        "CUDA is required for ProtSolM inference but no GPU was detected. "
+        "Please run on a machine with a CUDA-capable GPU (e.g. L4)."
+    )
+
+_DEVICE = torch.device("cuda")
+logger.info(f"ProtSolM will use device: {_DEVICE}")
+
+
 def _download_file(url: str, dest: str) -> None:
     """Download *url* to *dest* using urllib (no extra deps)."""
     import urllib.request
@@ -72,46 +84,21 @@ def _download_file(url: str, dest: str) -> None:
     urllib.request.urlretrieve(url, dest)
 
 
-def _patch_models_for_cpu(models_py: str) -> None:
-    """Patch ProtSolM src/models.py so it works without CUDA."""
+def _restore_original_models(protsolm_dir: str) -> None:
+    """If models.py was previously patched for CPU, restore the original."""
+    models_py = os.path.join(protsolm_dir, "src", "models.py")
+    if not os.path.isfile(models_py):
+        return
     with open(models_py) as f:
         code = f.read()
-
-    if "_DEVICE" in code:
-        return  # already patched
-
-    # Add device selection at the top of the module
-    code = code.replace(
-        "from src.module.egnn.network import EGNN",
-        "from src.module.egnn.network import EGNN\n\n"
-        "# Device selection: use CUDA if available, otherwise CPU\n"
-        '_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")',
+    if "_DEVICE" not in code:
+        return  # not patched, nothing to do
+    # Restore original via git checkout inside the cached clone
+    logger.info("Restoring original (CUDA) src/models.py …")
+    _subprocess.run(
+        ["git", "checkout", "--", "src/models.py"],
+        cwd=protsolm_dir, check=True, capture_output=True,
     )
-    # Replace hardcoded .cuda() calls
-    code = code.replace(
-        ".from_pretrained(self.args.plm).cuda()",
-        ".from_pretrained(self.args.plm).to(_DEVICE)",
-    )
-    code = code.replace(
-        '.to("cuda:0")', ".to(_DEVICE)"
-    )
-    code = re.sub(
-        r"(\[elem)\.cuda\(\)( for elem in batch\])",
-        r"\1.to(_DEVICE)\2",
-        code,
-    )
-    code = code.replace(
-        "self.GNN_model = self.GNN_model.cuda()",
-        "self.GNN_model = self.GNN_model.to(_DEVICE)",
-    )
-    code = code.replace(
-        "torch.cuda.empty_cache()",
-        "torch.cuda.empty_cache() if torch.cuda.is_available() else None",
-    )
-
-    with open(models_py, "w") as f:
-        f.write(code)
-    logger.info("Patched src/models.py for CPU compatibility")
 
 
 def _ensure_protsolm() -> str:
@@ -122,7 +109,8 @@ def _ensure_protsolm() -> str:
     if os.path.isdir(PROTSOLM_DIR) and os.path.isfile(
         os.path.join(PROTSOLM_DIR, "src", "models.py")
     ):
-        # Already cloned — just make sure checkpoints exist
+        # Already cloned — restore original if previously CPU-patched
+        _restore_original_models(PROTSOLM_DIR)
         _ensure_checkpoints()
         return PROTSOLM_DIR
 
@@ -133,10 +121,6 @@ def _ensure_protsolm() -> str:
         check=True,
         capture_output=True,
     )
-
-    # Patch for CPU support
-    models_py = os.path.join(PROTSOLM_DIR, "src", "models.py")
-    _patch_models_for_cpu(models_py)
 
     _ensure_checkpoints()
     return PROTSOLM_DIR
@@ -655,7 +639,7 @@ def run_protsolm_inference(pdb_path: str, sequence: str | None = None) -> dict:
     _ensure_protsolm()
     _init_paths()
 
-    device = torch.device("cpu")  # CPU inference
+    device = _DEVICE
 
     logger.info("Building protein graph from PDB...")
     graph = build_protein_graph(pdb_path, c_alpha_max_neighbors=20)
@@ -740,15 +724,15 @@ def run_protsolm_inference(pdb_path: str, sequence: str | None = None) -> dict:
         if esm_len > graph_len:
             esm_rep = esm_rep[:graph_len]
         else:
-            pad = torch.zeros(graph_len - esm_len, esm_rep.shape[1])
+            pad = torch.zeros(graph_len - esm_len, esm_rep.shape[1], device=device)
             esm_rep = torch.cat([esm_rep, pad], dim=0)
 
     graph.esm_rep = esm_rep
-    graph.feature = feature_tensor
-    graph.label = torch.tensor([0]).view(1)
+    graph.feature = feature_tensor.to(device)
+    graph.label = torch.tensor([0], device=device).view(1)
     graph.aa_seq = use_seq
     graph.name = os.path.basename(pdb_path).replace(".pdb", "")
-    graph.batch = torch.zeros(graph_len, dtype=torch.long)
+    graph.batch = torch.zeros(graph_len, dtype=torch.long, device=device)
 
     # Load GNN
     logger.info("Loading ProtSSN GNN...")
@@ -770,8 +754,8 @@ def run_protsolm_inference(pdb_path: str, sequence: str | None = None) -> dict:
     # Run GNN forward
     logger.info("Running GNN + classifier inference...")
     with torch.no_grad():
-        # Build batch graph
-        batch_graph = Batch.from_data_list([graph])
+        # Build batch graph and move everything to GPU
+        batch_graph = Batch.from_data_list([graph]).to(device)
 
         # GNN forward
         gnn_out, gnn_embeds = gnn_model(batch_graph)
@@ -790,8 +774,8 @@ def run_protsolm_inference(pdb_path: str, sequence: str | None = None) -> dict:
         graph_sizes = torch.unique(batch_graph.batch, return_counts=True)[1]
         max_nodes = graph_sizes.max().item()
         batch_size = 1
-        padded = torch.zeros(batch_size, max_nodes, combined.shape[-1])
-        attention_mask = torch.zeros(batch_size, max_nodes)
+        padded = torch.zeros(batch_size, max_nodes, combined.shape[-1], device=device)
+        attention_mask = torch.zeros(batch_size, max_nodes, device=device)
         padded[0, :graph_len] = combined
         attention_mask[0, :graph_len] = 1
 
