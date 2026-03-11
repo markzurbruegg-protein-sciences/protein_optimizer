@@ -1,6 +1,6 @@
 {
   "step_name": "protein_characterization",
-  "timestamp": "2026-03-10T17:44:02.581470+00:00",
+  "timestamp": "2026-03-11T12:36:02.447731+00:00",
   "config_used": {
     "_global": {
       "protected_residues": [],
@@ -16,7 +16,7 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM",
-      "candidate_id": "951323b0568b",
+      "candidate_id": "75d992c95015",
       "parent_id": null,
       "structure_path": null,
       "mutations": [],
@@ -1317,7 +1317,11 @@
               "score": 56.3,
               "label": "Borderline"
             }
-          }
+          },
+          "rp3net_probability": 0.0209,
+          "rp3net_label": "Likely Not Expressed",
+          "rp3net_score_pct": 2.1,
+          "rp3net_method": "RP3Net (ESM2-650M)"
         }
       }
     }

@@ -1546,6 +1546,26 @@ def _protein_characterization_narrative(name: str, result: StepResult) -> str:
             f"<strong>{sol_label}</strong> ({sol_score:.0f}%).</p>"
         )
 
+    # RP3Net E. coli production prediction
+    rp3net_prob = char.get("rp3net_probability", 0)
+    rp3net_label = char.get("rp3net_label", "")
+    rp3net_pct = char.get("rp3net_score_pct", 0)
+    if rp3net_label and rp3net_label != "Unavailable":
+        rp3_verdict = "likely to express" if rp3net_prob >= 0.5 else "unlikely to express"
+        rp3_color = "#3fb950" if rp3net_prob >= 0.5 else "#f85149"
+        lines.append(
+            f'<div style="background:rgba(88,166,255,0.06);border-left:3px solid '
+            f'{rp3_color};padding:0.5rem 0.8rem;margin:0.5rem 0;border-radius:4px">'
+            f"<strong>RP3Net E.&nbsp;coli Production Prediction:</strong> "
+            f"<strong>{rp3net_label}</strong> (P = {rp3net_prob:.3f}, {rp3net_pct:.0f}%). "
+            f"RP3Net (Tankhilevich et al., <em>Bioinformatics</em> 2026) uses "
+            f"ESM2-650M fine-tuned with LoRA + Set Transformer Pooling, trained on "
+            f"AstraZeneca and Structural Genomics Consortium small-scale expression "
+            f"screens via Meta Label Correction. Prospective AUROC 0.83 on human "
+            f"drug targets. This protein is <strong>{rp3_verdict}</strong> in a "
+            f"standard small-scale E.&nbsp;coli expression screen.</div>"
+        )
+
     # Signal peptide
     if sp.get("detected"):
         lines.append(

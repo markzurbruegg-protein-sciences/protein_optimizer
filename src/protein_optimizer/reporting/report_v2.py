@@ -330,6 +330,11 @@ def _compute_metrics(
         "protsolm_confidence": char.get("protsolm_confidence", ""),
         "protsolm_score_pct": char.get("protsolm_score_pct", 50.0),
         "protsolm_method": char.get("protsolm_method", ""),
+        # RP3Net E. coli expression prediction
+        "rp3net_probability": char.get("rp3net_probability", 0.5),
+        "rp3net_label": char.get("rp3net_label", ""),
+        "rp3net_score_pct": char.get("rp3net_score_pct", 50.0),
+        "rp3net_method": char.get("rp3net_method", ""),
         # TANGO-like β-aggregation data
         "tango_scores": char.get("tango_scores", []),
         "tango_aprs": char.get("tango_aprs", []),
@@ -1433,6 +1438,19 @@ def _char_rare_codon_metric(m: dict, _metric) -> str:
     return f'      {_metric("Rare Codon Load", f"{frac * 100:.1f}%", rc_css)}'
 
 
+def _char_rp3net_metric(m: dict, _metric) -> str:
+    """Render RP3Net E. coli production prediction metric."""
+    prob = m.get("rp3net_probability", 0)
+    label = m.get("rp3net_label", "")
+    score_pct = m.get("rp3net_score_pct", 0)
+    if not label or label == "Unavailable":
+        return ""
+    rp3_css = "good" if prob >= 0.5 else "bad"
+    return (
+        f'      {_metric("RP3Net (E. coli expr.)", f"{score_pct:.0f}% — {label}", rp3_css)}'
+    )
+
+
 def _char_sequence_features_group(m: dict, _metric) -> str:
     """Render Sequence Features metric group (signal peptides, IDRs)."""
     lines: list[str] = []
@@ -1652,6 +1670,7 @@ def _hero_section(
       {_metric("Rare-codon AAs (W/C/M)", f"{m.get('rare_codons', 0)}", "")}
       {_metric("Prolines", f"{m.get('proline_count', 0)}", "")}
 {_char_rare_codon_metric(m, _metric)}
+{_char_rp3net_metric(m, _metric)}
     </div>
 
 {_char_sequence_features_group(m, _metric)}

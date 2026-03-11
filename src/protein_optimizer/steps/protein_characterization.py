@@ -284,6 +284,13 @@ class ProteinCharacterizationStep(BaseStep):
         char["solubility_ensemble_confidence"] = sol_ensemble["confidence"]
         char["solubility_methods"] = sol_ensemble["methods"]
 
+        # RP3Net — E. coli recombinant expression prediction
+        rp3net = _rp3net_prediction(seq)
+        char["rp3net_probability"] = rp3net["probability"]
+        char["rp3net_label"] = rp3net["label"]
+        char["rp3net_score_pct"] = rp3net["score_pct"]
+        char["rp3net_method"] = rp3net["method"]
+
         # Store in parent metadata
         parent.metadata["characterization"] = char
 
@@ -1941,3 +1948,79 @@ def _proso_like_score(seq: str) -> dict[str, Any]:
         label = "Insoluble"
 
     return {"score": round(pct, 1), "label": label}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# RP3Net — E. coli recombinant protein production prediction
+# ═══════════════════════════════════════════════════════════════════
+
+_RP3NET_MODEL = None  # lazy singleton
+_RP3NET_CKPT = Path.home() / ".cache" / "rp3net" / "rp3net_v0.1_d.ckpt"
+_RP3NET_CKPT_URL = (
+    "https://ftp.ebi.ac.uk/pub/software/RP3Net/v0.1/checkpoints/rp3net_v0.1_d.ckpt"
+)
+
+
+def _ensure_rp3net_checkpoint() -> "Path | None":
+    """Return path to RP3Net checkpoint, downloading it if necessary."""
+    if _RP3NET_CKPT.exists():
+        return _RP3NET_CKPT
+    try:
+        import urllib.request
+        _RP3NET_CKPT.parent.mkdir(parents=True, exist_ok=True)
+        logger.info("Downloading RP3Net checkpoint (~2.5 GB) …")
+        urllib.request.urlretrieve(_RP3NET_CKPT_URL, str(_RP3NET_CKPT))
+        logger.info("RP3Net checkpoint saved to %s", _RP3NET_CKPT)
+        return _RP3NET_CKPT
+    except Exception as exc:
+        logger.warning("Could not download RP3Net checkpoint: %s", exc)
+        return None
+
+
+def _rp3net_prediction(seq: str) -> dict[str, Any]:
+    """Predict E. coli recombinant production probability using RP3Net.
+
+    RP3Net (Tankhilevich et al., Bioinformatics 2026) fine-tunes ESM2-650M
+    with LoRA + Set Transformer Pooling, trained on AstraZeneca / SGC
+    small-scale expression screens via Meta Label Correction (MLC).
+    Achieves AUROC 0.83 in prospective experimental validation on human
+    drug targets.
+    """
+    global _RP3NET_MODEL
+
+    try:
+        import RP3Net as rp3
+    except ImportError:
+        logger.warning("RP3Net not installed — run: pip install RP3Net")
+        return _rp3net_fallback()
+
+    ckpt = _ensure_rp3net_checkpoint()
+    if ckpt is None:
+        return _rp3net_fallback()
+
+    try:
+        if _RP3NET_MODEL is None:
+            logger.info("Loading RP3Net (ESM2-650M + LoRA) — first call may take ~30 s …")
+            _RP3NET_MODEL = rp3.load_model(rp3.RP3_DEFAULT_CONFIG, str(ckpt))
+
+        score = float(_RP3NET_MODEL.predict([seq]).item())
+        label = "Likely Expressed" if score >= 0.5 else "Likely Not Expressed"
+        return {
+            "probability": round(score, 4),
+            "label": label,
+            "score_pct": round(score * 100, 1),
+            "method": "RP3Net (ESM2-650M)",
+        }
+    except Exception as exc:
+        logger.warning("RP3Net prediction failed: %s", exc)
+        _RP3NET_MODEL = None  # allow retry on next call
+        return _rp3net_fallback()
+
+
+def _rp3net_fallback() -> dict[str, Any]:
+    return {
+        "probability": 0.5,
+        "label": "Unavailable",
+        "score_pct": 50.0,
+        "method": "RP3Net (unavailable)",
+    }
