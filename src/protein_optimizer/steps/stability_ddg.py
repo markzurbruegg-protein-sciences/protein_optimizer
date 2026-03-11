@@ -128,6 +128,20 @@ class StabilityDDGStep(BaseStep):
                 f"(ΔΔG < {ddg_threshold}) out of {len(ddg_results)} scored"
             )
 
+            # Store summary stats for sidebar / downstream steps
+            all_ddg_vals = [d for _, _, _, d in ddg_results]
+            stab_sorted = sorted(stabilizing, key=lambda x: x[3])
+            parent.metadata["thermompnn_summary"] = {
+                "best_ddg": min(all_ddg_vals) if all_ddg_vals else 0.0,
+                "n_stabilizing": len(stabilizing),
+                "n_total_scanned": len(ddg_results),
+                "ddg_threshold": ddg_threshold,
+                "top_5_mutations": [
+                    {"position": p, "wt": w, "mut": m, "ddg": round(d, 3)}
+                    for p, w, m, d in stab_sorted[:5]
+                ],
+            }
+
             for pos, wt, mut_aa, ddg in stabilizing:
                 mut = Mutation(
                     position=pos, wt=wt, mut=mut_aa,

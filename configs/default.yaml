@@ -1,18 +1,40 @@
 # Default protein optimization pipeline configuration
-# Customize and pass with: protein-opt run --config your_config.yaml
+#
+# This is the standard pipeline config used when no --config is supplied.
+# It runs the full analysis → engineering → SSM → optimization flow.
+#
+# Usage:
+#   protopt -i my_protein.fasta                       # uses this config
+#   protopt -i my_protein.fasta -c configs/custom.yaml  # override
 
 pipeline:
   steps:
+    # ── Stage 1: Sequence Analysis ──
     - protein_characterization
     - cysteine_scan
     - motif_scan
     - sequence_complexity
+    # ── Stage 2: Evolutionary Analysis ──
     - find_homologs
     - consensus_design
     - pssm_analysis
+    # ── Stage 3: Structure Prediction & Engineering ──
+    - predict_structure
+    - stability_ddg
+    - disulfide_design
+    - cavity_fill
+    - surface_patch
+    # ── Stage 3b: Solubility SSM ──
+    - solubility_ssm
+    # ── Stage 4: Variant Combination ──
+    - combine_variants
+    # ── Stage 5: PLM Scoring ──
+    - e1_score
+    # ── Stage 6: Multi-Mutation Optimization ──
+    - mutation_optimizer
 
 global:
-  protected_residues: []
+  protected_residues: [204, 312]  # Set your catalytic residues here, e.g. [45, 89, 120]
   expression_host: ecoli
   output_dir: ./results
 
@@ -44,119 +66,98 @@ sequence_complexity:
 
 # ──────────────────────────── Tier 2 ────────────────────────────
 find_homologs:
-  search_method: colabfold   # 'colabfold' (API, fast) or 'local' (mmseqs2 + local DB)
-  database: ""               # path to local MMseqs2 DB (only for search_method=local)
+  search_method: colabfold
   min_identity: 0.3
   max_identity: 0.9
   max_hits: 500
   e_value: 1.0e-5
 
 consensus_design:
-  min_conservation: 0.4
-  max_mutations: 10
+  min_conservation: 0.3
+  max_mutations: 20
 
 pssm_analysis:
-  pseudocount: 1
-  threshold: 1.0
-  max_mutations: 10
+  pseudocount: 0.5
+  threshold: 1.5
+  max_mutations: 30
 
 # ──────────────────────────── Tier 3 ────────────────────────────
 predict_structure:
   method: boltz2
+  conda_env: boltz2-env
   use_msa_server: true
 
 stability_ddg:
-  method: rosetta
-  scan_top_n: 20
+  method: thermompnn
+  conda_env: protopt
+  thermompnn_dir: /home/markzurbruegg/ThermoMPNN
+  model_weights: /home/markzurbruegg/ThermoMPNN/models/thermoMPNN_default.pt
   ddg_threshold: -0.5
+  saturation_mutagenesis: true
+  chain: A
 
 disulfide_design:
-  min_cb_distance: 3.5
-  max_cb_distance: 4.5
-  min_sequence_separation: 4
+  cb_distance_min: 3.5
+  cb_distance_max: 4.5
+  max_candidates: 15
 
 cavity_fill:
-  min_volume: 20.0
-  max_mutations: 10
+  min_volume: 15.0
+  max_mutations: 15
 
 surface_patch:
-  sasa_threshold: 0.25
+  sasa_threshold: 0.20
   patch_min_size: 3
-  max_mutations: 10
+  max_mutations: 15
+
+# ──────────────────────────── Tier 3b ───────────────────────────
+solubility_ssm:
+  conda_env: protopt
+  max_positions: 100
+  batch_size: 32
 
 # ──────────────────────────── Tier 4 ────────────────────────────
+combine_variants:
+  max_single_mutations: 25
+  max_combination_order: 3
+  max_library_size: 300
+  ranking_score: null
+  min_score_threshold: -999.0
+
+# ──────────────────────────── Tier 5 ────────────────────────────
 e1_score:
+  conda_env: e1
   model: Profluent-Bio/E1-600m
   retrieval_augmented: true
   max_homologs_context: 8
-  batch_size: 4
-  score_existing: true
   site_saturation: false
-  top_k_positions: 5
+  top_k_positions: 20
 
-esm1v_score:
-  n_models: 5
-  score_existing: true
-  site_saturation: false
-  top_k_positions: 5
-
-proteinmpnn_design:
-  proteinmpnn_dir: ""
-  use_soluble_model: true
-  omit_aas: "C"
-  sampling_temp: 0.1
-  num_sequences: 8
-  redesign_mode: all
-
-esmif1_score:
-  chain_id: A
-
-combine_variants:
-  max_single_mutations: 15
-  max_combination_order: 3
-  max_library_size: 200
-  min_score_threshold: 0.0
-
-# ──────────────────────────── Tier 5 ────────────────────────────
-rfdiffusion_diversify:
-  rfdiffusion_dir: ""
-  partial_T: 15
-  T: 50
-  num_designs: 5
-  conda_env: SE3nv
-
-design_validate:
-  min_plddt: 70.0
-  max_rmsd: 2.0
-  mpnn:
-    num_sequences: 4
-    sampling_temp: 0.1
-  boltz:
-    use_msa_server: false
-
-motif_scaffold:
-  rfdiffusion_dir: ""
-  motif_residues: []
-  scaffold_length: [80, 120]
-  num_designs: 5
-  conda_env: SE3nv
+# ──────────────────────────── Tier 6 ────────────────────────────
+mutation_optimizer:
+  e1_conda_env: e1
+  e1_model: Profluent-Bio/E1-600m
+  retrieval_augmented: true
+  max_homologs_context: 8
+  max_pool_size: 20
+  max_combination_order: 5
+  max_library_size: 25000
+  max_charge_shift: 5
 
 # ──────────────────────────── Scoring ────────────────────────────
 scoring:
   weights:
-    e1_fitness: 0.25
-    esm1v_delta: 0.20
-    esmif1_delta: 0.15
-    mpnn_score: 0.10
-    consensus_score: 0.10
-    pssm_delta: 0.10
-    ddg: 0.05
-    cavity_burial: 0.025
-    surface_sap: 0.025
+    e1_fitness: 0.30
+    ddg: 0.15
+    delta_solubility: 0.10
+    consensus_conservation: 0.10
+    pssm_log_odds: 0.10
+    evidence_score: 0.05
+    disulfide_cb_distance: 0.05
+    cavity_burial: 0.05
+    surface_sap: 0.05
 
   filters:
     max_mutations: 15
-    min_plddt: 60.0
-    max_ddg: 5.0
-    forbid_new_cysteines: true
+    forbid_new_cysteines: false
     forbid_prolines_in_helix: true

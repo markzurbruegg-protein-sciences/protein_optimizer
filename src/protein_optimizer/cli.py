@@ -109,7 +109,7 @@ _GENERATIVE_STEPS = {"rfdiffusion_diversify", "proteinmpnn_design", "design_vali
 @click.option("-i", "--input", "input_fasta", type=click.Path(exists=True), default=None,
               metavar="FASTA", help="Input FASTA file — runs the full pipeline directly.")
 @click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
-              metavar="YAML", help="Pipeline YAML config (default: configs/full_pipeline.yaml).")
+              metavar="YAML", help="Pipeline YAML config (default: configs/default.yaml).")
 @click.option("--generative", is_flag=True, default=False,
               help="Enable generative design steps (RFdiffusion + ProteinMPNN + validation).")
 @click.pass_context
@@ -142,7 +142,7 @@ def main(ctx: click.Context, verbose: bool, input_fasta: str | None,
 @main.command()
 @click.argument("input_fasta", type=click.Path(exists=True))
 @click.option("-c", "--config", "config_path", type=click.Path(exists=True), default=None,
-              help="Pipeline YAML config (default: configs/full_pipeline.yaml).")
+              help="Pipeline YAML config (default: configs/default.yaml).")
 @click.option("--generative", is_flag=True, default=False,
               help="Enable generative design steps (RFdiffusion + ProteinMPNN + validation).")
 def run(input_fasta: str, config_path: str | None, generative: bool) -> None:
@@ -162,7 +162,7 @@ def run(input_fasta: str, config_path: str | None, generative: bool) -> None:
     # Default config
     if config_path is None:
         pkg_root = Path(__file__).resolve().parents[2]
-        default_cfg = pkg_root / "configs" / "full_pipeline.yaml"
+        default_cfg = pkg_root / "configs" / "default.yaml"
         if default_cfg.exists():
             config_path = str(default_cfg)
 

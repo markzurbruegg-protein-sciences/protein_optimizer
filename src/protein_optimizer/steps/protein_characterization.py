@@ -31,6 +31,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -2001,7 +2002,17 @@ def _rp3net_prediction(seq: str) -> dict[str, Any]:
     try:
         if _RP3NET_MODEL is None:
             logger.info("Loading RP3Net (ESM2-650M + LoRA) — first call may take ~30 s …")
-            _RP3NET_MODEL = rp3.load_model(rp3.RP3_DEFAULT_CONFIG, str(ckpt))
+            with warnings.catch_warnings():
+                # lightning_fabric loads the checkpoint with weights_only=None which
+                # triggers a FutureWarning from torch.load.  The RP3Net checkpoint
+                # is fetched from the official EBI FTP and is a trusted source, so
+                # suppressing this warning here is safe.
+                warnings.filterwarnings(
+                    "ignore",
+                    category=FutureWarning,
+                    module="lightning_fabric",
+                )
+                _RP3NET_MODEL = rp3.load_model(rp3.RP3_DEFAULT_CONFIG, str(ckpt))
 
         score = float(_RP3NET_MODEL.predict([seq]).item())
         label = "Likely Expressed" if score >= 0.5 else "Likely Not Expressed"

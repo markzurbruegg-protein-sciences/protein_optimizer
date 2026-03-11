@@ -16,13 +16,32 @@ from protein_optimizer.models import ProteinCandidate, StepResult
 def generate_step_narratives(results: dict[str, StepResult]) -> list[str]:
     """Generate HTML narrative blocks for each step result.
 
-    Returns a list of HTML strings, one per step, with human-readable
-    explanations of what was found and proposed.
+    Returns a list of HTML strings organized by thematic section,
+    with section dividers between groups.
     """
-    narratives = []
+    narratives: list[str] = []
+    rendered: set[str] = set()
+
+    for section_title, step_names in NARRATIVE_ORDER:
+        section_items: list[str] = []
+        for step_name in step_names:
+            if step_name not in results:
+                continue
+            fn = _NARRATORS.get(step_name, _generic_narrative)
+            section_items.append(fn(step_name, results[step_name]))
+            rendered.add(step_name)
+
+        if section_items:
+            narratives.append(_section_divider(section_title))
+            narratives.extend(section_items)
+
+    # Render any steps not covered by NARRATIVE_ORDER
     for step_name, result in results.items():
+        if step_name in rendered:
+            continue
         fn = _NARRATORS.get(step_name, _generic_narrative)
         narratives.append(fn(step_name, result))
+
     return narratives
 
 
@@ -817,6 +836,137 @@ def _esm1v_score_narrative(name: str, result: StepResult) -> str:
             f"<p><strong>Output:</strong> {len(result.candidates)} candidates.</p>",
         )
     return _generic_narrative(name, result)
+
+
+def _solubility_ssm_narrative(name: str, result: StepResult) -> str:
+    """Narrative for the ProtSolM targeted saturation mutagenesis step."""
+    parent = next((c for c in result.candidates if c.parent_id is None), None)
+    variants = [c for c in result.candidates if c.parent_id is not None]
+    summary = parent.metadata.get("solubility_ssm_summary", {}) if parent else {}
+
+    if not summary:
+        return _generic_narrative(name, result)
+
+    n_beneficial = summary.get("n_beneficial", 0)
+    n_scanned = summary.get("n_total_scanned", 0)
+    n_positions = summary.get("n_positions", 0)
+    top5 = summary.get("top_5_mutations", [])
+
+    content = (
+        f"<p>Targeted <strong>ProtSolM</strong> saturation mutagenesis was performed "
+        f"on <strong>{n_positions}</strong> positions (surface-exposed hydrophobics + "
+        f"aggregation-prone regions). Evaluated <strong>{n_scanned}</strong> variants.</p>"
+        f"<p>Found <strong>{n_beneficial} solubility-improving</strong> mutations "
+        f"(ΔSolubility &gt; 0).</p>"
+    )
+
+    if top5:
+        rows = "".join(
+            f'<tr><td class="mono">{html.escape(m.get("label", ""))}</td>'
+            f'<td class="good">{m.get("delta_solubility", 0):+.4f}</td></tr>'
+            for m in top5
+        )
+        content += (
+            '<h4>Top Solubility-Improving Mutations</h4>'
+            '<table><thead><tr><th>Mutation</th><th>ΔSolubility</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table>'
+        )
+
+    return _wrap_narrative(name, "ProtSolM Solubility SSM", content)
+
+
+def _mutation_optimizer_narrative(name: str, result: StepResult) -> str:
+    """Narrative for the multi-mutation combinatorial optimizer step."""
+    parent = next((c for c in result.candidates if c.parent_id is None), None)
+    summary = parent.metadata.get("optimizer_summary", {}) if parent else {}
+    evidence_table = parent.metadata.get("mutation_evidence_table", []) if parent else []
+    multi_table = parent.metadata.get("multi_mutant_table", []) if parent else []
+
+    if not summary:
+        return _generic_narrative(name, result)
+
+    n_pool = summary.get("n_pool", 0)
+    n_combos = summary.get("n_combinations", 0)
+    n_scored = summary.get("n_scored", 0)
+    best_e1 = summary.get("best_e1")
+    best_muts = summary.get("best_mutations", [])
+    wt_e1 = summary.get("wt_e1", 0)
+    max_order = summary.get("max_order", 5)
+
+    content = (
+        f"<p>The mutation optimizer pooled <strong>{n_pool}</strong> top mutations "
+        f"from all sources, generated <strong>{n_combos:,}</strong> combinations "
+        f"(up to order {max_order}), and scored all with Profluent E1.</p>"
+    )
+
+    if best_e1 is not None:
+        delta = best_e1 - wt_e1 if wt_e1 else 0
+        content += (
+            f'<p>Best multi-mutant: <strong class="mono">'
+            f'{", ".join(html.escape(m) for m in best_muts)}</strong> '
+            f'with E1 fitness <strong class="good">{best_e1:.4f}</strong> '
+            f'(Δ = {delta:+.4f} vs WT).</p>'
+        )
+
+    # Evidence table
+    if evidence_table:
+        rows = ""
+        for e in evidence_table[:15]:
+            src = ", ".join(s.replace("_", " ").title() for s in e.get("evidence_sources", []))
+            rows += (
+                f'<tr><td class="mono">{html.escape(e.get("label", ""))}</td>'
+                f'<td>{_fmt_or_dash(e.get("e1_gain"))}</td>'
+                f'<td>{_fmt_or_dash(e.get("ddg"))}</td>'
+                f'<td>{_fmt_or_dash(e.get("delta_solubility"))}</td>'
+                f'<td>{e.get("evidence_breadth", 0)}</td>'
+                f'<td>{e.get("evidence_score", 0):.3f}</td>'
+                f'<td style="font-size:0.78rem">{html.escape(src)}</td></tr>'
+            )
+        content += (
+            '<h4>Single Mutation Evidence Table</h4>'
+            '<div class="overflow-x"><table>'
+            '<thead><tr><th>Mutation</th><th>E1 Gain</th><th>ΔΔG</th>'
+            '<th>ΔSol</th><th>Sources</th><th>Score</th><th>Contributing Steps</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>'
+        )
+
+    # Multi-mutant table
+    if multi_table:
+        rows = ""
+        sorted_table = sorted(multi_table, key=lambda x: x.get("e1_fitness", 0), reverse=True)
+        for i, entry in enumerate(sorted_table[:20], 1):
+            muts_str = ", ".join(html.escape(m) for m in entry.get("mutations", []))
+            e1 = entry.get("e1_fitness", 0)
+            delta = entry.get("e1_delta", 0)
+            epist = entry.get("epistasis_signal", 0)
+            e1_css = "good" if delta > 0 else "bad"
+            ep_css = "good" if epist > 0.01 else "warn" if epist > -0.01 else "bad"
+            rows += (
+                f'<tr><td>{i}</td>'
+                f'<td class="mono">{muts_str}</td>'
+                f'<td>{entry.get("n_mutations", 0)}</td>'
+                f'<td class="{e1_css}">{e1:.4f}</td>'
+                f'<td class="{e1_css}">{delta:+.4f}</td>'
+                f'<td>{_fmt_or_dash(entry.get("additive_ddg"))}</td>'
+                f'<td class="{ep_css}">{epist:+.4f}</td></tr>'
+            )
+        content += (
+            '<h4>Top Multi-Mutant Variants</h4>'
+            '<div class="overflow-x"><table>'
+            '<thead><tr><th>#</th><th>Mutations</th><th>N</th>'
+            '<th>E1 Fitness</th><th>ΔE1</th><th>Add. ΔΔG</th>'
+            '<th>Epistasis</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>'
+        )
+
+    return _wrap_narrative(name, "Multi-Mutation Optimizer", content)
+
+
+def _fmt_or_dash(val) -> str:
+    """Format a numeric value or return —."""
+    if val is None:
+        return "—"
+    return f"{val:.3f}"
 
 
 def _generic_narrative(name: str, result: StepResult) -> str:
@@ -1617,6 +1767,40 @@ def _wrap_narrative(step_name: str, title: str, content: str) -> str:
 """
 
 
+def _section_divider(title: str) -> str:
+    """Create a thematic section divider for narrative grouping."""
+    return f"""
+<div style="margin:2rem 0 1rem;padding:0.6rem 0;border-bottom:2px solid var(--border,#30363d)">
+  <h2 style="color:var(--accent,#58a6ff);font-size:1.1rem;margin:0">{html.escape(title)}</h2>
+</div>
+"""
+
+
+# ── Narrative ordering ───────────────────────────────────────────────
+
+NARRATIVE_ORDER: list[tuple[str, list[str]]] = [
+    ("Sequence Analysis", [
+        "protein_characterization", "sequence_complexity", "motif_scan", "cysteine_scan",
+    ]),
+    ("Evolutionary Analysis", [
+        "find_homologs", "consensus_design", "pssm_analysis",
+    ]),
+    ("Structural Analysis", [
+        "predict_structure", "stability_ddg", "disulfide_design",
+        "cavity_fill", "surface_patch",
+    ]),
+    ("In Silico Mutagenesis", [
+        "e1_score", "solubility_ssm",
+    ]),
+    ("Variant Combination", [
+        "combine_variants",
+    ]),
+    ("Multi-Mutation Optimization", [
+        "mutation_optimizer",
+    ]),
+]
+
+
 # ── Registry ─────────────────────────────────────────────────────────
 
 _NARRATORS: dict[str, Any] = {
@@ -1633,6 +1817,7 @@ _NARRATORS: dict[str, Any] = {
     "cavity_fill": _cavity_fill_narrative,
     "surface_patch": _surface_patch_narrative,
     "e1_score": _e1_score_narrative,
-    "esm1v_score": _esm1v_score_narrative,
+    "solubility_ssm": _solubility_ssm_narrative,
     "combine_variants": _combine_variants_narrative,
+    "mutation_optimizer": _mutation_optimizer_narrative,
 }

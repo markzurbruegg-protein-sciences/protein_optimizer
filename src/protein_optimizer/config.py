@@ -100,6 +100,22 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "epistasis_check": True,
             "min_individual_score_percentile": 75,
         },
+        "solubility_ssm": {
+            "conda_env": "protopt",
+            "protsolm_model": "protsolm",
+            "max_positions": 100,
+            "batch_size": 32,
+        },
+        "mutation_optimizer": {
+            "e1_conda_env": "e1",
+            "e1_model": "Profluent-Bio/E1-600m",
+            "retrieval_augmented": True,
+            "max_homologs_context": 8,
+            "max_pool_size": 20,
+            "max_combination_order": 5,
+            "max_library_size": 25000,
+            "max_charge_shift": 5,
+        },
         "rfdiffusion_diversify": {
             "partial_T": 15,
             "T": 50,

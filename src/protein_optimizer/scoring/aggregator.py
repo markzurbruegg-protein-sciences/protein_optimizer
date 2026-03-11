@@ -25,6 +25,8 @@ DEFAULT_WEIGHTS: dict[str, float] = {
     "ddg": 0.05,
     "cavity_burial": 0.025,
     "surface_sap": 0.025,
+    "delta_solubility": 0.10,
+    "evidence_score": 0.05,
 }
 
 

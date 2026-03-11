@@ -631,6 +631,222 @@ def normalize_graph(graph, norm_file: str, skip_x: int = 20,
 
 # ── Model Loading and Inference ──────────────────────────────────
 
+def run_protsolm_batch(pdb_path: str, sequences: list[str]) -> list[dict]:
+    """Run ProtSolM inference on multiple sequences sharing the same backbone.
+
+    Pre-computes graph topology, structural features, and GNN once, then
+    only re-runs ESM2 embeddings and classification per sequence. Much faster
+    than calling run_protsolm_inference() in a loop.
+
+    Args:
+        pdb_path: Path to PDB file (backbone shared across all sequences).
+        sequences: List of protein sequences to score.
+
+    Returns:
+        List of dicts with solubility predictions, one per sequence.
+    """
+    _ensure_protsolm()
+    _init_paths()
+    device = _DEVICE
+
+    logger.info(f"Batch ProtSolM: {len(sequences)} sequences on shared backbone")
+
+    # Pre-compute backbone-dependent data ONCE
+    logger.info("Building protein graph from PDB (once)...")
+    graph_template = build_protein_graph(pdb_path, c_alpha_max_neighbors=20)
+    graph_template = normalize_graph(graph_template, NORM_FILE)
+    features_template, pdb_seq = compute_features_from_pdb(pdb_path)
+
+    graph_len = graph_template.x.shape[0]
+
+    # Set up model args
+    class Args:
+        pass
+
+    args = Args()
+    args.gnn = "egnn"
+    args.gnn_config = yaml.load(
+        open(GNN_CONFIG_FILE), Loader=yaml.FullLoader
+    )["egnn"]
+    args.gnn_config["hidden_channels"] = 512
+    args.gnn_config["mlp_num"] = 2
+    args.gnn_hidden_dim = 512
+    args.plm = "facebook/esm2_t33_650M_UR50D"
+    args.plm_hidden_size = 1280
+    args.pooling_method = "attention1d"
+    args.pooling_dropout = 0.1
+    args.num_labels = 2
+    args.feature_name = ["aa_composition", "gravy", "ss_composition",
+                         "hygrogen_bonds", "exposed_res_fraction", "pLDDT"]
+    args.feature_dim = 42  # fixed for ProtSolM
+    args.feature_embed_dim = 512
+    args.use_plddt_penalty = True
+    args.gnn_model_path = GNN_CHECKPOINT
+
+    # Load models
+    logger.info("Loading ESM2 + GNN + classifier...")
+    from transformers import AutoTokenizer, EsmModel
+    from src.models import GNN_model, ProtssnClassification
+    from torch_geometric.data import Batch
+
+    tokenizer = AutoTokenizer.from_pretrained(args.plm)
+    esm_model = EsmModel.from_pretrained(args.plm).to(device)
+    esm_model.eval()
+
+    gnn_model = GNN_model(args).to(device)
+    gnn_state = torch.load(GNN_CHECKPOINT, map_location=device, weights_only=False)
+    gnn_model.load_state_dict(gnn_state)
+    gnn_model.eval()
+
+    protssn_classification = ProtssnClassification(args).to(device)
+    ft_state = torch.load(FT_CHECKPOINT, map_location=device, weights_only=False)
+    protssn_classification.load_state_dict(ft_state["state_dict"])
+    protssn_classification.eval()
+
+    # Move graph template to device once (will be cloned per sequence)
+    graph_template = graph_template.to(device)
+
+    # Process sequences in batches for ESM2
+    batch_size = 32
+    results = []
+
+    for batch_start in range(0, len(sequences), batch_size):
+        batch_seqs = sequences[batch_start:batch_start + batch_size]
+        logger.info(
+            f"Processing batch {batch_start // batch_size + 1}/"
+            f"{(len(sequences) + batch_size - 1) // batch_size} "
+            f"({len(batch_seqs)} sequences)"
+        )
+
+        with torch.no_grad():
+            # ESM2 embeddings for this batch
+            inputs = tokenizer(
+                batch_seqs, return_tensors="pt", padding=True, truncation=True
+            ).to(device)
+            outputs = esm_model(**inputs)
+            esm_reps = outputs.last_hidden_state  # (B, L+2, 1280)
+
+            for i, seq in enumerate(batch_seqs):
+                seq_len = len(seq)
+                esm_rep = esm_reps[i, 1:1 + seq_len, :]  # strip BOS/EOS
+
+                # Handle length mismatch between graph and sequence
+                if seq_len > graph_len:
+                    esm_rep = esm_rep[:graph_len]
+                elif seq_len < graph_len:
+                    pad = torch.zeros(
+                        graph_len - seq_len, esm_rep.shape[1], device=device
+                    )
+                    esm_rep = torch.cat([esm_rep, pad], dim=0)
+
+                # Clone graph template and set ESM embeddings
+                # (GNN requires esm_rep on the graph data)
+                graph = graph_template.clone()
+                graph.esm_rep = esm_rep
+
+                # Run GNN on graph with ESM embeddings
+                graph_batch = Batch.from_data_list([graph])
+                _, gnn_embeds = gnn_model(graph_batch)
+
+                # Recompute sequence-dependent features
+                seq_features = _compute_seq_features(seq, features_template)
+                feature_tensor = torch.tensor(
+                    seq_features, dtype=torch.float32
+                ).view(1, -1).to(device)
+
+                # Combine ESM + GNN with pLDDT penalty
+                plddt_val = feature_tensor[:, -1]
+                combined = esm_rep + plddt_val.view(-1, 1) * gnn_embeds
+
+                # Pad for attention pooling
+                padded = torch.zeros(
+                    1, graph_len, combined.shape[-1], device=device
+                )
+                attention_mask = torch.zeros(1, graph_len, device=device)
+                padded[0, :graph_len] = combined
+                attention_mask[0, :graph_len] = 1
+
+                # Pooling + classification
+                pooled = protssn_classification.pooling(padded, attention_mask)
+                feat = protssn_classification.batch_norm1(feature_tensor)
+                feat = protssn_classification.feature_embed_layer(feat)
+                feat = protssn_classification.batch_norm2(feat)
+                pooled_with_feat = torch.cat([pooled, feat], dim=1)
+                logits, _ = protssn_classification.projection(
+                    pooled_with_feat, return_embed=True
+                )
+
+                probs = F.softmax(logits, dim=-1).squeeze()
+                prob_soluble = probs[1].item() if probs.dim() > 0 else probs.item()
+                max_prob = max(probs.tolist()) if probs.dim() > 0 else probs.item()
+
+                results.append({
+                    "soluble": prob_soluble >= 0.5,
+                    "probability": round(prob_soluble, 4),
+                    "confidence": (
+                        "high" if max_prob >= 0.85
+                        else "moderate" if max_prob >= 0.65
+                        else "low"
+                    ),
+                    "label": "Soluble" if prob_soluble >= 0.5 else "Insoluble",
+                    "score_pct": round(prob_soluble * 100, 1),
+                })
+
+    logger.info(f"Batch ProtSolM complete: {len(results)} predictions")
+    return results
+
+
+def _compute_seq_features(sequence: str, template_features: dict) -> list[float]:
+    """Compute the 42-dim feature vector for a mutant sequence.
+
+    Re-uses structural features from the template (SS, H-bonds, exposed
+    residues, pLDDT) and only recomputes AA-composition and GRAVY which
+    change with the sequence.
+    """
+    length = len(sequence)
+    counts = {aa: sequence.count(aa) for aa in "CDERHNGPS"}
+    amino_acid_hydropathy = {
+        'A': 1.8, 'R': -4.5, 'N': -3.5, 'D': -3.5, 'C': 2.5, 'Q': -3.5,
+        'E': -3.5, 'G': -0.4, 'H': -3.2, 'I': 4.5, 'L': 3.8, 'K': -3.9,
+        'M': 1.9, 'F': 2.8, 'P': -1.6, 'S': -0.8, 'T': -0.7, 'W': -0.9,
+        'Y': -1.3, 'V': 4.2
+    }
+    gravy = sum(amino_acid_hydropathy.get(aa, 0) for aa in sequence) / max(length, 1)
+
+    # Sequence-dependent features
+    seq_features = {
+        "1-C": counts.get("C", 0) / length,
+        "1-D": counts.get("D", 0) / length,
+        "1-E": counts.get("E", 0) / length,
+        "1-R": counts.get("R", 0) / length,
+        "1-H": counts.get("H", 0) / length,
+        "Turn-forming residues fraction": (
+            counts.get("N", 0) + counts.get("G", 0) +
+            counts.get("P", 0) + counts.get("S", 0)
+        ) / length,
+        "GRAVY": gravy,
+    }
+
+    # Build feature vector in ProtSolM order, using template for structural features
+    feature_keys = (
+        ["1-C", "1-D", "1-E", "1-R", "1-H", "Turn-forming residues fraction"]
+        + ["GRAVY"]
+        + [f"ss8-{s}" for s in "GHIBETSPL"]
+        + [f"ss3-{s}" for s in "HEC"]
+        + ["Hydrogen bonds", "Hydrogen bonds per 100 residues"]
+        + [f"Exposed residues fraction by {p}%" for p in range(5, 105, 5)]
+        + ["pLDDT"]
+    )
+
+    vec = []
+    for key in feature_keys:
+        if key in seq_features:
+            vec.append(seq_features[key])
+        else:
+            vec.append(template_features.get(key, 0.0))
+    return vec
+
+
 def run_protsolm_inference(pdb_path: str, sequence: str | None = None) -> dict:
     """Run full ProtSolM inference on a single protein.
 
@@ -833,21 +1049,30 @@ def run_protsolm_inference(pdb_path: str, sequence: str | None = None) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="ProtSolM inference helper")
-    parser.add_argument("pdb_path", help="Input PDB file")
+    parser.add_argument("input_path", help="Input PDB file or JSON for batch mode")
     parser.add_argument("output_json", help="Output JSON file")
-    parser.add_argument("--sequence", default=None, help="Override sequence")
+    parser.add_argument("--sequence", default=None, help="Override sequence (single mode)")
+    parser.add_argument("--batch", action="store_true", help="Batch mode: input is JSON with pdb_path + sequences")
     args = parser.parse_args()
 
-    if not os.path.exists(args.pdb_path):
-        logger.error(f"PDB file not found: {args.pdb_path}")
+    if not os.path.exists(args.input_path):
+        logger.error(f"Input file not found: {args.input_path}")
         sys.exit(1)
 
-    result = run_protsolm_inference(args.pdb_path, args.sequence)
-
-    with open(args.output_json, "w") as f:
-        json.dump(result, f, indent=2)
-
-    logger.info(f"Result written to {args.output_json}")
+    if args.batch:
+        with open(args.input_path) as f:
+            batch_input = json.load(f)
+        pdb_path = batch_input["pdb_path"]
+        sequences = batch_input["sequences"]
+        results = run_protsolm_batch(pdb_path, sequences)
+        with open(args.output_json, "w") as f:
+            json.dump({"predictions": results}, f, indent=2)
+        logger.info(f"Batch results ({len(results)} predictions) written to {args.output_json}")
+    else:
+        result = run_protsolm_inference(args.input_path, args.sequence)
+        with open(args.output_json, "w") as f:
+            json.dump(result, f, indent=2)
+        logger.info(f"Result written to {args.output_json}")
 
 
 if __name__ == "__main__":

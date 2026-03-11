@@ -1,11 +1,23 @@
 {
   "step_name": "protein_characterization",
-  "timestamp": "2026-03-11T12:36:02.447731+00:00",
+  "timestamp": "2026-03-11T14:44:09.432541+00:00",
   "config_used": {
+    "expression_host": "ecoli",
+    "ph_range": [
+      2.0,
+      12.0
+    ],
+    "disorder_threshold": 0.5,
+    "signal_peptide_scan_length": 70,
+    "external_tools": {
+      "signalp": "auto",
+      "iupred": "auto",
+      "hmmscan": "auto"
+    },
     "_global": {
       "protected_residues": [],
       "expression_host": "ecoli",
-      "output_dir": "./results"
+      "output_dir": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results"
     }
   },
   "warnings": [],
@@ -16,7 +28,7 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM",
-      "candidate_id": "75d992c95015",
+      "candidate_id": "7a945d6a205f",
       "parent_id": null,
       "structure_path": null,
       "mutations": [],
@@ -1318,9 +1330,9 @@
               "label": "Borderline"
             }
           },
-          "rp3net_probability": 0.0209,
+          "rp3net_probability": 0.0204,
           "rp3net_label": "Likely Not Expressed",
-          "rp3net_score_pct": 2.1,
+          "rp3net_score_pct": 2.0,
           "rp3net_method": "RP3Net (ESM2-650M)"
         }
       }

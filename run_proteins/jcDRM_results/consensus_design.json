@@ -1,9 +1,9 @@
 {
   "step_name": "consensus_design",
-  "timestamp": "2026-03-10T16:51:57.430663+00:00",
+  "timestamp": "2026-03-11T14:44:28.575733+00:00",
   "config_used": {
     "min_conservation": 0.3,
-    "max_mutations": 15,
+    "max_mutations": 20,
     "_global": {
       "protected_residues": [],
       "expression_host": "ecoli",
@@ -16,7 +16,7 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM",
-      "candidate_id": "9e7bb60ff111",
+      "candidate_id": "7a945d6a205f",
       "parent_id": null,
       "structure_path": null,
       "mutations": [],
@@ -835,361 +835,11 @@
           "aggregation_score": 0.0,
           "aggregation_regions": [],
           "aggregation_region_count": 0,
-          "camsol_scores": [
-            -0.171,
-            -0.113,
-            -0.061,
-            -0.035,
-            -0.046,
-            -0.061,
-            -0.2,
-            -0.249,
-            -0.279,
-            -0.4,
-            -0.4,
-            -0.306,
-            -0.087,
-            -0.057,
-            0.075,
-            -0.018,
-            -0.006,
-            -0.021,
-            -0.021,
-            -0.014,
-            -0.028,
-            -0.111,
-            0.011,
-            0.211,
-            0.219,
-            0.189,
-            -0.018,
-            -0.022,
-            0.079,
-            0.079,
-            -0.146,
-            -0.299,
-            -0.395,
-            -0.399,
-            -0.279,
-            -0.268,
-            -0.363,
-            -0.26,
-            -0.216,
-            -0.12,
-            -0.017,
-            -0.01,
-            -0.019,
-            -0.019,
-            -0.133,
-            -0.011,
-            -0.008,
-            -0.127,
-            -0.236,
-            -0.13,
-            -0.159,
-            -0.139,
-            -0.219,
-            -0.111,
-            -0.047,
-            0.054,
-            -0.054,
-            0.171,
-            0.188,
-            0.196,
-            0.196,
-            0.251,
-            0.24,
-            0.159,
-            -0.085,
-            -0.066,
-            -0.021,
-            -0.126,
-            -0.133,
-            -0.114,
-            0.057,
-            0.308,
-            0.376,
-            0.331,
-            0.264,
-            0.274,
-            0.177,
-            -0.025,
-            -0.134,
-            -0.245,
-            -0.172,
-            -0.084,
-            0.022,
-            -0.064,
-            0.049,
-            -0.067,
-            -0.067,
-            -0.073,
-            -0.207,
-            -0.316,
-            -0.241,
-            -0.33,
-            -0.229,
-            -0.204,
-            -0.201,
-            0.024,
-            0.027,
-            -0.078,
-            0.011,
-            -0.08,
-            0.004,
-            0.091,
-            0.079,
-            -0.035,
-            -0.055,
-            -0.055,
-            0.05,
-            -0.05,
-            -0.046,
-            -0.15,
-            0.069,
-            0.18,
-            0.27,
-            0.176,
-            0.301,
-            0.141,
-            0.033,
-            -0.07,
-            -0.07,
-            -0.233,
-            -0.244,
-            -0.267,
-            -0.201,
-            -0.086,
-            -0.001,
-            -0.071,
-            -0.012,
-            0.188,
-            0.308,
-            0.242,
-            0.358,
-            0.358,
-            0.445,
-            0.386,
-            0.394,
-            0.379,
-            0.41,
-            0.403,
-            0.301,
-            0.392,
-            0.465,
-            0.364,
-            0.154,
-            0.174,
-            -0.022,
-            -0.005,
-            -0.009,
-            -0.134,
-            -0.225,
-            -0.207,
-            -0.099,
-            0.098,
-            0.084,
-            0.102,
-            0.316,
-            0.297,
-            0.406,
-            0.168,
-            -0.068,
-            -0.224,
-            -0.456,
-            -0.543,
-            -0.324,
-            -0.324,
-            -0.089,
-            -0.032,
-            0.121,
-            0.245,
-            0.148,
-            0.141,
-            0.129,
-            0.134,
-            0.312,
-            0.271,
-            0.372,
-            0.398,
-            0.17,
-            0.04,
-            -0.066,
-            -0.295,
-            -0.243,
-            -0.236,
-            -0.156,
-            -0.026,
-            0.089,
-            0.209,
-            0.326,
-            0.318,
-            0.198,
-            0.074,
-            0.071,
-            0.194,
-            0.071,
-            0.177,
-            0.294,
-            0.263,
-            0.465,
-            0.465,
-            0.244,
-            0.247,
-            0.124,
-            0.016,
-            -0.074,
-            -0.158,
-            -0.242,
-            -0.036,
-            -0.039,
-            -0.109,
-            -0.131,
-            -0.097,
-            -0.123,
-            -0.163,
-            -0.269,
-            -0.346,
-            -0.338,
-            -0.226,
-            -0.034,
-            -0.065,
-            -0.061,
-            -0.05,
-            0.024,
-            0.096,
-            -0.124,
-            -0.207,
-            -0.262,
-            -0.264,
-            -0.264,
-            -0.369,
-            -0.489,
-            -0.359,
-            -0.389,
-            -0.413,
-            -0.301,
-            -0.309,
-            -0.194,
-            0.046,
-            -0.031,
-            -0.019,
-            0.027,
-            0.041,
-            0.158,
-            0.07,
-            -0.054,
-            -0.083,
-            0.021,
-            0.014,
-            0.101,
-            0.004,
-            0.004,
-            -0.076,
-            0.018,
-            -0.175,
-            0.006,
-            -0.193,
-            -0.204,
-            -0.008,
-            0.021,
-            0.044,
-            0.249,
-            0.17,
-            0.171,
-            0.116,
-            0.124,
-            0.139,
-            -0.009,
-            -0.246,
-            -0.156,
-            -0.041,
-            -0.001,
-            -0.099,
-            -0.034,
-            0.101,
-            0.211,
-            0.096,
-            -0.022,
-            -0.116,
-            -0.034,
-            -0.137,
-            -0.211,
-            -0.098,
-            -0.157,
-            -0.039,
-            0.072,
-            -0.116,
-            -0.007,
-            0.066,
-            0.066,
-            0.249,
-            0.174,
-            0.272,
-            0.372,
-            0.249,
-            0.173,
-            0.09,
-            -0.091,
-            -0.161,
-            -0.274,
-            -0.287,
-            -0.292,
-            -0.122,
-            -0.249,
-            -0.286,
-            -0.26,
-            -0.267,
-            -0.278,
-            -0.161,
-            -0.255,
-            -0.212,
-            -0.131,
-            -0.007,
-            -0.111,
-            -0.121,
-            -0.133,
-            -0.133,
-            -0.049,
-            0.089,
-            0.08,
-            0.206,
-            0.343,
-            0.449,
-            0.437,
-            0.349,
-            0.342,
-            0.342,
-            0.429,
-            0.422,
-            0.328,
-            0.339,
-            0.293,
-            0.049,
-            -0.085,
-            -0.081,
-            -0.246,
-            -0.286,
-            -0.178,
-            -0.153,
-            -0.101,
-            0.124,
-            -0.061,
-            -0.071,
-            0.06,
-            -0.114,
-            -0.143,
-            -0.131,
-            -0.24,
-            -0.041,
-            0.019,
-            -0.103,
-            -0.056,
-            0.121
-          ],
-          "camsol_overall": -0.008,
-          "camsol_patches": [],
-          "camsol_patch_count": 0,
+          "protsolm_probability": 0.4752,
+          "protsolm_label": "Insoluble",
+          "protsolm_confidence": "low",
+          "protsolm_score_pct": 47.5,
+          "protsolm_method": "ESM2 + ProtSSN EGNN + feature fusion",
           "tango_scores": [
             0.538,
             0.335,
@@ -1649,7 +1299,7 @@
           "net_charge_7": 3.2,
           "solubility_score": 50.1,
           "solubility_class": "Borderline",
-          "solubility_ensemble": 47.0,
+          "solubility_ensemble": 46.1,
           "solubility_ensemble_class": "Borderline",
           "solubility_ensemble_confidence": "high",
           "solubility_methods": {
@@ -1657,10 +1307,11 @@
               "score": 50.1,
               "label": "Borderline"
             },
-            "camsol": {
-              "score": 49.8,
-              "raw_score": -0.008,
-              "label": "Borderline"
+            "protsolm": {
+              "score": 47.5,
+              "probability": 0.4752,
+              "label": "Borderline",
+              "method": "ESM2 + ProtSSN EGNN + feature fusion"
             },
             "swi": {
               "score": 33.3,
@@ -1671,7 +1322,11 @@
               "score": 56.3,
               "label": "Borderline"
             }
-          }
+          },
+          "rp3net_probability": 0.0204,
+          "rp3net_label": "Likely Not Expressed",
+          "rp3net_score_pct": 2.0,
+          "rp3net_method": "RP3Net (ESM2-650M)"
         },
         "motif_hits": [
           {
@@ -1815,7 +1470,7 @@
         ],
         "homologs_fasta": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/jcDRM_homologs.fasta",
         "msa_fasta": "/home/markzurbruegg/protein_optimizer/run_proteins/jcDRM_results/jcDRM_msa.fasta",
-        "num_homologs": 1000,
+        "num_homologs": 500,
         "homolog_sequences": [
           "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
           "LHLPNPMIGFGVPTESDQITQRTLPEAATGPPYFYYENVALAPKGVWNTISRFLYDVEPEFVDSKYFCAAARKRGYIHNLPIENRFPLLPFPPRTIHEAFPLTRKWWPSWDTRTKLNCLQTCIGSARLTERIRKALERYDDEPPLSVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLFGFPRNHTRGGGISRTDRYKSLGNSFQVDTVAYHLSVLKDMFPDGINLLSLFSGIGGAEVALHRLGIPLKNVVAVEKSEVNRNIVRSWWEQTNQRGNLIDIPDVQELNGDRLEQLMNRFGGFDLVVGGSPCNNLTGSNRHHRDGLEGKDSSLFFDYCRILDLVKCITAR",
@@ -1874,8 +1529,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_A204N",
-      "candidate_id": "3dd17bbce433",
-      "parent_id": "9e7bb60ff111",
+      "candidate_id": "dea0d004c321",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
@@ -1883,124 +1538,16 @@
           "wt": "A",
           "mut": "N",
           "source_step": "consensus_design",
-          "score": 0.7271428571428571,
+          "score": 0.8450704225352113,
           "metadata": {
-            "conservation": 0.7271428571428571,
-            "wt_frequency": 0.0014285714285714286,
-            "column_depth": 700
+            "conservation": 0.8450704225352113,
+            "wt_frequency": 0.002012072434607646,
+            "column_depth": 497
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.7271428571428571
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPKGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_R45K",
-      "candidate_id": "7bee0440c94c",
-      "parent_id": "9e7bb60ff111",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 45,
-          "wt": "R",
-          "mut": "K",
-          "source_step": "consensus_design",
-          "score": 0.6738816738816739,
-          "metadata": {
-            "conservation": 0.6738816738816739,
-            "wt_frequency": 0.047619047619047616,
-            "column_depth": 693
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.6738816738816739
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRS",
-      "name": "jcDRM_T350S",
-      "candidate_id": "701a964bcfd4",
-      "parent_id": "9e7bb60ff111",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 350,
-          "wt": "T",
-          "mut": "S",
-          "source_step": "consensus_design",
-          "score": 0.6578947368421053,
-          "metadata": {
-            "conservation": 0.6578947368421053,
-            "wt_frequency": 0.25,
-            "column_depth": 76
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.6578947368421053
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "LLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_M1L",
-      "candidate_id": "330d77652f1d",
-      "parent_id": "9e7bb60ff111",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 1,
-          "wt": "M",
-          "mut": "L",
-          "source_step": "consensus_design",
-          "score": 0.6338028169014085,
-          "metadata": {
-            "conservation": 0.6338028169014085,
-            "wt_frequency": 0.352112676056338,
-            "column_depth": 71
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.6338028169014085
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_V306I",
-      "candidate_id": "dfcffb5f5a07",
-      "parent_id": "9e7bb60ff111",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 306,
-          "wt": "V",
-          "mut": "I",
-          "source_step": "consensus_design",
-          "score": 0.6266195524146054,
-          "metadata": {
-            "conservation": 0.6266195524146054,
-            "wt_frequency": 0.2661955241460542,
-            "column_depth": 849
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.6266195524146054
+        "consensus_conservation": 0.8450704225352113
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -2009,8 +1556,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_A312N",
-      "candidate_id": "8a3517f63523",
-      "parent_id": "9e7bb60ff111",
+      "candidate_id": "9ff07372e9ab",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
@@ -2018,178 +1565,124 @@
           "wt": "A",
           "mut": "N",
           "source_step": "consensus_design",
-          "score": 0.6211562115621156,
+          "score": 0.8432203389830508,
           "metadata": {
-            "conservation": 0.6211562115621156,
-            "wt_frequency": 0.006150061500615006,
-            "column_depth": 813
+            "conservation": 0.8432203389830508,
+            "wt_frequency": 0.006355932203389831,
+            "column_depth": 472
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.6211562115621156
+        "consensus_conservation": 0.8432203389830508
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRFPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_Y87F",
-      "candidate_id": "cdcd3f2ea9d9",
-      "parent_id": "9e7bb60ff111",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPKGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_R45K",
+      "candidate_id": "af1616208dfd",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
-          "position": 87,
-          "wt": "Y",
-          "mut": "F",
+          "position": 45,
+          "wt": "R",
+          "mut": "K",
           "source_step": "consensus_design",
-          "score": 0.5972413793103448,
+          "score": 0.7672064777327935,
           "metadata": {
-            "conservation": 0.5972413793103448,
-            "wt_frequency": 0.05931034482758621,
-            "column_depth": 725
+            "conservation": 0.7672064777327935,
+            "wt_frequency": 0.038461538461538464,
+            "column_depth": 494
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.5972413793103448
+        "consensus_conservation": 0.7672064777327935
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMIGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_V9I",
-      "candidate_id": "6bf680e0dbc5",
-      "parent_id": "9e7bb60ff111",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRS",
+      "name": "jcDRM_T350S",
+      "candidate_id": "be613a8e9e13",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
-          "position": 9,
+          "position": 350,
+          "wt": "T",
+          "mut": "S",
+          "source_step": "consensus_design",
+          "score": 0.72,
+          "metadata": {
+            "conservation": 0.72,
+            "wt_frequency": 0.28,
+            "column_depth": 50
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.72
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_V306I",
+      "candidate_id": "cb7b415e0e53",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 306,
           "wt": "V",
           "mut": "I",
           "source_step": "consensus_design",
-          "score": 0.575809199318569,
+          "score": 0.7110655737704918,
           "metadata": {
-            "conservation": 0.575809199318569,
-            "wt_frequency": 0.31175468483816016,
-            "column_depth": 587
+            "conservation": 0.7110655737704918,
+            "wt_frequency": 0.28688524590163933,
+            "column_depth": 488
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.575809199318569
+        "consensus_conservation": 0.7110655737704918
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYIHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_V78I",
-      "candidate_id": "1867271f62d4",
-      "parent_id": "9e7bb60ff111",
+      "sequence": "LLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_M1L",
+      "candidate_id": "2537187a93b6",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
-          "position": 78,
-          "wt": "V",
-          "mut": "I",
-          "source_step": "consensus_design",
-          "score": 0.5739484396200815,
-          "metadata": {
-            "conservation": 0.5739484396200815,
-            "wt_frequency": 0.34328358208955223,
-            "column_depth": 737
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.5739484396200815
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDIEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_V58I",
-      "candidate_id": "122569e8df51",
-      "parent_id": "9e7bb60ff111",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 58,
-          "wt": "V",
-          "mut": "I",
-          "source_step": "consensus_design",
-          "score": 0.548431105047749,
-          "metadata": {
-            "conservation": 0.548431105047749,
-            "wt_frequency": 0.35743519781718963,
-            "column_depth": 733
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.548431105047749
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNILRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_M265L",
-      "candidate_id": "66fc7aca5d9c",
-      "parent_id": "9e7bb60ff111",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 265,
+          "position": 1,
           "wt": "M",
           "mut": "L",
           "source_step": "consensus_design",
-          "score": 0.5435323383084577,
+          "score": 0.6451612903225806,
           "metadata": {
-            "conservation": 0.5435323383084577,
-            "wt_frequency": 0.036069651741293535,
-            "column_depth": 804
+            "conservation": 0.6451612903225806,
+            "wt_frequency": 0.3548387096774194,
+            "column_depth": 62
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.5435323383084577
-      },
-      "metadata": {
-        "derived_from": "jcDRM"
-      }
-    },
-    {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTERIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_D131E",
-      "candidate_id": "14fd028bf938",
-      "parent_id": "9e7bb60ff111",
-      "structure_path": null,
-      "mutations": [
-        {
-          "position": 131,
-          "wt": "D",
-          "mut": "E",
-          "source_step": "consensus_design",
-          "score": 0.5380645161290323,
-          "metadata": {
-            "conservation": 0.5380645161290323,
-            "wt_frequency": 0.25290322580645164,
-            "column_depth": 775
-          }
-        }
-      ],
-      "scores": {
-        "consensus_conservation": 0.5380645161290323
+        "consensus_conservation": 0.6451612903225806
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -2198,8 +1691,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFYDYCRILDLVKCIMTRT",
       "name": "jcDRM_F334Y",
-      "candidate_id": "d618f060556e",
-      "parent_id": "9e7bb60ff111",
+      "candidate_id": "cf09d1e87d51",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
@@ -2207,43 +1700,205 @@
           "wt": "F",
           "mut": "Y",
           "source_step": "consensus_design",
-          "score": 0.5136540962288687,
+          "score": 0.6348195329087049,
           "metadata": {
-            "conservation": 0.5136540962288687,
-            "wt_frequency": 0.3068920676202861,
-            "column_depth": 769
+            "conservation": 0.6348195329087049,
+            "wt_frequency": 0.2802547770700637,
+            "column_depth": 471
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.5136540962288687
+        "consensus_conservation": 0.6348195329087049
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIENRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
-      "name": "jcDRM_Q84E",
-      "candidate_id": "109222c25ebc",
-      "parent_id": "9e7bb60ff111",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRFPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_Y87F",
+      "candidate_id": "61a7719db5bc",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
-          "position": 84,
-          "wt": "Q",
-          "mut": "E",
+          "position": 87,
+          "wt": "Y",
+          "mut": "F",
           "source_step": "consensus_design",
-          "score": 0.4986413043478261,
+          "score": 0.6192384769539078,
           "metadata": {
-            "conservation": 0.4986413043478261,
-            "wt_frequency": 0.09510869565217392,
-            "column_depth": 736
+            "conservation": 0.6192384769539078,
+            "wt_frequency": 0.07214428857715431,
+            "column_depth": 499
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.4986413043478261
+        "consensus_conservation": 0.6192384769539078
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDIEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_V58I",
+      "candidate_id": "7a4a447cebf7",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 58,
+          "wt": "V",
+          "mut": "I",
+          "source_step": "consensus_design",
+          "score": 0.6061224489795919,
+          "metadata": {
+            "conservation": 0.6061224489795919,
+            "wt_frequency": 0.33877551020408164,
+            "column_depth": 490
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.6061224489795919
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYIHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_V78I",
+      "candidate_id": "5f11297ae140",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 78,
+          "wt": "V",
+          "mut": "I",
+          "source_step": "consensus_design",
+          "score": 0.578,
+          "metadata": {
+            "conservation": 0.578,
+            "wt_frequency": 0.394,
+            "column_depth": 500
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.578
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRSWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_C267S",
+      "candidate_id": "96613e32e41b",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 267,
+          "wt": "C",
+          "mut": "S",
+          "source_step": "consensus_design",
+          "score": 0.5503080082135524,
+          "metadata": {
+            "conservation": 0.5503080082135524,
+            "wt_frequency": 0.06776180698151951,
+            "column_depth": 487
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.5503080082135524
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTERIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_D131E",
+      "candidate_id": "f7b88b4de385",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 131,
+          "wt": "D",
+          "mut": "E",
+          "source_step": "consensus_design",
+          "score": 0.54,
+          "metadata": {
+            "conservation": 0.54,
+            "wt_frequency": 0.276,
+            "column_depth": 500
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.54
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGISRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_L193I",
+      "candidate_id": "09cc10f31318",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 193,
+          "wt": "L",
+          "mut": "I",
+          "source_step": "consensus_design",
+          "score": 0.5393939393939394,
+          "metadata": {
+            "conservation": 0.5393939393939394,
+            "wt_frequency": 0.06666666666666667,
+            "column_depth": 495
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.5393939393939394
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMIGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_V9I",
+      "candidate_id": "012cb5c64131",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 9,
+          "wt": "V",
+          "mut": "I",
+          "source_step": "consensus_design",
+          "score": 0.5255813953488372,
+          "metadata": {
+            "conservation": 0.5255813953488372,
+            "wt_frequency": 0.3558139534883721,
+            "column_depth": 430
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.5255813953488372
       },
       "metadata": {
         "derived_from": "jcDRM"
@@ -2252,8 +1907,8 @@
     {
       "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKYVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
       "name": "jcDRM_F151Y",
-      "candidate_id": "43e97d97be67",
-      "parent_id": "9e7bb60ff111",
+      "candidate_id": "c4ccac448b94",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
@@ -2261,26 +1916,161 @@
           "wt": "F",
           "mut": "Y",
           "source_step": "consensus_design",
-          "score": 0.4796854521625164,
+          "score": 0.5089820359281437,
           "metadata": {
-            "conservation": 0.4796854521625164,
-            "wt_frequency": 0.10484927916120576,
-            "column_depth": 763
+            "conservation": 0.5089820359281437,
+            "wt_frequency": 0.1437125748502994,
+            "column_depth": 501
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 0.4796854521625164
+        "consensus_conservation": 0.5089820359281437
       },
       "metadata": {
         "derived_from": "jcDRM"
       }
     },
     {
-      "sequence": "LLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPKGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRS",
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEAFPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_L101F",
+      "candidate_id": "0b28d49c8132",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 101,
+          "wt": "L",
+          "mut": "F",
+          "source_step": "consensus_design",
+          "score": 0.5050100200400801,
+          "metadata": {
+            "conservation": 0.5050100200400801,
+            "wt_frequency": 0.3486973947895792,
+            "column_depth": 499
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.5050100200400801
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNILRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_M265L",
+      "candidate_id": "d4c371301821",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 265,
+          "wt": "M",
+          "mut": "L",
+          "source_step": "consensus_design",
+          "score": 0.4989733059548255,
+          "metadata": {
+            "conservation": 0.4989733059548255,
+            "wt_frequency": 0.0513347022587269,
+            "column_depth": 487
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.4989733059548255
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLINCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_M296I",
+      "candidate_id": "cd72c1098e5f",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 296,
+          "wt": "M",
+          "mut": "I",
+          "source_step": "consensus_design",
+          "score": 0.48155737704918034,
+          "metadata": {
+            "conservation": 0.48155737704918034,
+            "wt_frequency": 0.3237704918032787,
+            "column_depth": 488
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.48155737704918034
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVASAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_G125A",
+      "candidate_id": "b43fae97fed0",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 125,
+          "wt": "G",
+          "mut": "A",
+          "source_step": "consensus_design",
+          "score": 0.4647887323943662,
+          "metadata": {
+            "conservation": 0.4647887323943662,
+            "wt_frequency": 0.4507042253521127,
+            "column_depth": 497
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.4647887323943662
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPRGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGKNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGASFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVVGGSPCANLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRT",
+      "name": "jcDRM_R166K",
+      "candidate_id": "fc6749b05652",
+      "parent_id": "7a945d6a205f",
+      "structure_path": null,
+      "mutations": [
+        {
+          "position": 166,
+          "wt": "R",
+          "mut": "K",
+          "source_step": "consensus_design",
+          "score": 0.4468937875751503,
+          "metadata": {
+            "conservation": 0.4468937875751503,
+            "wt_frequency": 0.30060120240480964,
+            "column_depth": 499
+          }
+        }
+      ],
+      "scores": {
+        "consensus_conservation": 0.4468937875751503
+      },
+      "metadata": {
+        "derived_from": "jcDRM"
+      }
+    },
+    {
+      "sequence": "MLRLPNPMVGFGVPNEPAIVTNRTLPEAAVGPPYFYYENVALAPKGVWQTISRFLYDVEPEFVDSKYFCAAARKRGYVHNLPIQNRYPLLPLPPYTIHEALPLTKKWWPSWDTRTKLNCLQTCVGSAKLTDRIRKALEDYEGDPPLTVQKFVLDECRKWNLVWVGRNKVAPLEPDEVEMLLGFPRNHTRGGGLSRTDRYKSLGNSFQVDTVAYHLSVLKDMFPGGINVLSLFSGIGGAEVALHRLGIRLKNVVSVEISEVNRNIMRCWWEQTNQSGTLIDIVDVQHLNADRLEQLMNCFGGFDLVIGGSPCNNLAGSNRHHRDGLEGKESSLFFDYCRILDLVKCIMTRS",
       "name": "jcDRM_consensus_top5",
-      "candidate_id": "2bf48e8aef92",
-      "parent_id": "9e7bb60ff111",
+      "candidate_id": "3a5a2073391c",
+      "parent_id": "7a945d6a205f",
       "structure_path": null,
       "mutations": [
         {
@@ -2288,11 +2078,23 @@
           "wt": "A",
           "mut": "N",
           "source_step": "consensus_design",
-          "score": 0.7271428571428571,
+          "score": 0.8450704225352113,
           "metadata": {
-            "conservation": 0.7271428571428571,
-            "wt_frequency": 0.0014285714285714286,
-            "column_depth": 700
+            "conservation": 0.8450704225352113,
+            "wt_frequency": 0.002012072434607646,
+            "column_depth": 497
+          }
+        },
+        {
+          "position": 312,
+          "wt": "A",
+          "mut": "N",
+          "source_step": "consensus_design",
+          "score": 0.8432203389830508,
+          "metadata": {
+            "conservation": 0.8432203389830508,
+            "wt_frequency": 0.006355932203389831,
+            "column_depth": 472
           }
         },
         {
@@ -2300,11 +2102,11 @@
           "wt": "R",
           "mut": "K",
           "source_step": "consensus_design",
-          "score": 0.6738816738816739,
+          "score": 0.7672064777327935,
           "metadata": {
-            "conservation": 0.6738816738816739,
-            "wt_frequency": 0.047619047619047616,
-            "column_depth": 693
+            "conservation": 0.7672064777327935,
+            "wt_frequency": 0.038461538461538464,
+            "column_depth": 494
           }
         },
         {
@@ -2312,23 +2114,11 @@
           "wt": "T",
           "mut": "S",
           "source_step": "consensus_design",
-          "score": 0.6578947368421053,
+          "score": 0.72,
           "metadata": {
-            "conservation": 0.6578947368421053,
-            "wt_frequency": 0.25,
-            "column_depth": 76
-          }
-        },
-        {
-          "position": 1,
-          "wt": "M",
-          "mut": "L",
-          "source_step": "consensus_design",
-          "score": 0.6338028169014085,
-          "metadata": {
-            "conservation": 0.6338028169014085,
-            "wt_frequency": 0.352112676056338,
-            "column_depth": 71
+            "conservation": 0.72,
+            "wt_frequency": 0.28,
+            "column_depth": 50
           }
         },
         {
@@ -2336,16 +2126,16 @@
           "wt": "V",
           "mut": "I",
           "source_step": "consensus_design",
-          "score": 0.6266195524146054,
+          "score": 0.7110655737704918,
           "metadata": {
-            "conservation": 0.6266195524146054,
-            "wt_frequency": 0.2661955241460542,
-            "column_depth": 849
+            "conservation": 0.7110655737704918,
+            "wt_frequency": 0.28688524590163933,
+            "column_depth": 488
           }
         }
       ],
       "scores": {
-        "consensus_conservation": 3.3193416371826503
+        "consensus_conservation": 3.8865628130215475
       },
       "metadata": {
         "derived_from": "jcDRM"

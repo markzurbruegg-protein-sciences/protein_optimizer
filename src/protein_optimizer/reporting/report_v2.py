@@ -60,13 +60,10 @@ _STEP_DISPLAY_NAMES: dict[str, str] = {
     "disulfide_design":     "Disulfide Design",
     "cavity_fill":          "Cavity Fill",
     "surface_patch":        "Surface Patch",
-    "rfdiffusion_diversify": "RFdiffusion Diversify",
-    "proteinmpnn_design":   "ProteinMPNN Design",
-    "design_validate":      "Design Validate",
+    "solubility_ssm":       "Solubility SSM",
     "combine_variants":     "Combine Variants",
     "e1_score":             "E1 Score",
-    "esm1v_score":          "ESM-1v Score",
-    "esmif1_score":         "ESM-IF1 Score",
+    "mutation_optimizer":   "Multi-Mutation Optimizer",
 }
 
 
@@ -138,42 +135,6 @@ def generate_report_v2(
         for v in variants:
             if v.name in e1_map and "e1_fitness" not in v.scores:
                 v.scores["e1_fitness"] = e1_map[v.name]
-
-    # ── Merge ESM-1v scores if available from a separate step ──
-    esm1v_result = results.get("esm1v_score")
-    if esm1v_result and canonical_key != "esm1v_score":
-        esm1v_map: dict[str, dict[str, float]] = {}
-        for c in esm1v_result.candidates:
-            sc: dict[str, float] = {}
-            if "esm1v_pll" in c.scores:
-                sc["esm1v_pll"] = c.scores["esm1v_pll"]
-            if "esm1v_delta" in c.scores:
-                sc["esm1v_delta"] = c.scores["esm1v_delta"]
-            if sc:
-                esm1v_map[c.name] = sc
-        for v in variants:
-            if v.name in esm1v_map:
-                for k, val in esm1v_map[v.name].items():
-                    if k not in v.scores:
-                        v.scores[k] = val
-
-    # ── Merge ESM-IF1 scores if available from a separate step ──
-    esmif1_result = results.get("esmif1_score")
-    if esmif1_result and canonical_key != "esmif1_score":
-        esmif1_map: dict[str, dict[str, float]] = {}
-        for c in esmif1_result.candidates:
-            sc2: dict[str, float] = {}
-            if "esmif1_score" in c.scores:
-                sc2["esmif1_score"] = c.scores["esmif1_score"]
-            if "esmif1_delta" in c.scores:
-                sc2["esmif1_delta"] = c.scores["esmif1_delta"]
-            if sc2:
-                esmif1_map[c.name] = sc2
-        for v in variants:
-            if v.name in esmif1_map:
-                for k, val in esmif1_map[v.name].items():
-                    if k not in v.scores:
-                        v.scores[k] = val
 
     # Rank variants by E1 fitness (primary) then composite_score (fallback)
     def _rank_key(c: ProteinCandidate) -> float:
@@ -288,6 +249,16 @@ def _compute_metrics(
                 char = c.metadata["characterization"]
                 break
 
+    # ── Pull ThermMPNN summary from stability_ddg step ──
+    thermompnn_best_ddg = None
+    ddg_result = results.get("stability_ddg")
+    if ddg_result:
+        for c in ddg_result.candidates:
+            if c.parent_id is None and "thermompnn_summary" in c.metadata:
+                ts = c.metadata["thermompnn_summary"]
+                thermompnn_best_ddg = ts.get("best_ddg")
+                break
+
     return {
         "length": n,
         "mw": mw,
@@ -357,6 +328,8 @@ def _compute_metrics(
         "rare_codon_fraction": char.get("rare_codon_fraction", 0),
         "aromaticity": char.get("aromaticity", 0),
         "sequence": char.get("sequence", seq),
+        # ThermMPNN
+        "thermompnn_best_ddg": thermompnn_best_ddg,
     }
 
 
@@ -531,20 +504,19 @@ _TIER_MAP: dict[str, int] = {
     "cysteine_scan": 1, "motif_scan": 1, "sequence_complexity": 1,
     "find_homologs": 2, "consensus_design": 2, "pssm_analysis": 2,
     "predict_structure": 3, "disulfide_design": 3, "cavity_fill": 3,
-    "surface_patch": 3, "stability_ddg": 3,
-    "rfdiffusion_diversify": 4, "proteinmpnn_design": 4,
-    "design_validate": 4, "combine_variants": 4,
-    "esm1v_score": 5, "e1_score": 5, "esmif1_score": 5,
-    "motif_scaffold": 6,
+    "surface_patch": 3, "stability_ddg": 3, "solubility_ssm": 3,
+    "combine_variants": 4,
+    "e1_score": 5,
+    "mutation_optimizer": 6,
 }
 
 _TIER_NAMES = {
     1: "Sequence Heuristics",
     2: "Evolutionary Analysis",
     3: "Structure-based Engineering",
-    4: "Design & Combination",
+    4: "Variant Combination",
     5: "PLM Scoring",
-    6: "Generative Design",
+    6: "Multi-Mutation Optimization",
 }
 
 
@@ -1262,6 +1234,15 @@ def _char_tm_metric(m: dict, _metric) -> str:
     return f'      {_metric("Est. Tm", f"{tm:.0f}°C ({conf} conf.)", tm_css)}'
 
 
+def _char_thermompnn_metric(m: dict, _metric) -> str:
+    """Render ThermMPNN best ΔΔG metric."""
+    ddg = m.get("thermompnn_best_ddg")
+    if ddg is None:
+        return ""
+    ddg_css = "good" if ddg < -1.0 else "warn" if ddg < 0 else "bad"
+    return f'      {_metric("ThermMPNN Best ΔΔG", f"{ddg:.2f} kcal/mol", ddg_css)}'
+
+
 def _char_aggregation_metric(m: dict, _metric) -> str:
     """Render APR count if characterization data available."""
     apr_count = m.get("aggregation_region_count", 0)
@@ -1438,6 +1419,15 @@ def _char_rare_codon_metric(m: dict, _metric) -> str:
     return f'      {_metric("Rare Codon Load", f"{frac * 100:.1f}%", rc_css)}'
 
 
+def _char_extinction_metric(m: dict, _metric) -> str:
+    """Render extinction coefficient metric for Sequence Identity section."""
+    ec = m.get("extinction_coefficient", {})
+    if not ec:
+        return ""
+    ec_val = ec.get("reduced", 0)
+    return f'      {_metric("ε₂₈₀ (reduced)", f"{ec_val:,} M⁻¹cm⁻¹", "")}'
+
+
 def _char_rp3net_metric(m: dict, _metric) -> str:
     """Render RP3Net E. coli production prediction metric."""
     prob = m.get("rp3net_probability", 0)
@@ -1481,17 +1471,6 @@ def _char_sequence_features_group(m: dict, _metric) -> str:
         if disorder_scores:
             sparkline = _disorder_sparkline(disorder_scores)
             lines.append(f'<div class="metric-row"><span class="label">Disorder Profile</span>{sparkline}</div>')
-
-    # Extinction coefficient
-    ec = m.get("extinction_coefficient", {})
-    if ec:
-        ec_val = ec.get("reduced", 0)
-        lines.append(_metric("ε₂₈₀ (reduced)", f"{ec_val:,} M⁻¹cm⁻¹", ""))
-
-    # Aromaticity
-    arom = m.get("aromaticity", 0)
-    if arom:
-        lines.append(_metric("Aromaticity", f"{arom:.3f}", ""))
 
     if not lines:
         return ""
@@ -1630,6 +1609,15 @@ def _hero_section(
     <h2>Protein Metrics</h2>
 
     <div class="metric-group">
+      <h3>Sequence Identity</h3>
+      {_metric("Length", f"{m.get('length', 0)} aa", "")}
+      {_metric("Mol. Weight", f"{m.get('mw', 0):.1f} Da", "")}
+      {_metric("Isoelectric Point", f"{m.get('pI', 0):.2f}", "")}
+{_char_extinction_metric(m, _metric)}
+      {_metric("Net Charge (pH 7.4)", f"{charge:+.1f}", charge_css)}
+    </div>
+
+    <div class="metric-group">
       <h3>Structure Quality</h3>
       {_metric("Mean pLDDT", f"{plddt_mean:.1f}", plddt_css)}
       {_metric("Min pLDDT", f"{m.get('plddt_min', 0):.1f}", plddt_css)}
@@ -1637,13 +1625,15 @@ def _hero_section(
 
     <div class="metric-group">
       <h3>Thermal Stability</h3>
+{_char_tm_metric(m, _metric)}
       {_metric("Instability Index", f"{ii:.1f} ({m.get('instability_label', '?')})", ii_css)}
       {_metric("Aliphatic Index", f"{ai:.1f}", ai_css)}
-{_char_tm_metric(m, _metric)}
+{_char_thermompnn_metric(m, _metric)}
     </div>
 
     <div class="metric-group">
-      <h3>Aggregation &amp; Solubility</h3>
+      <h3>Solubility &amp; Aggregation</h3>
+      {_metric("GRAVY", f"{gravy:.3f}", gravy_css)}
       {_metric("Agg. Score", f"{agg:.3f}", agg_css)}
       {_metric("Hydrophobic Patches", f"{m.get('agg_patches', 0)}", agg_css)}
       {_metric("Surface Patches (SAP)", f"{m.get('n_surface_patches', 0)}", "")}
@@ -1656,12 +1646,10 @@ def _hero_section(
 
     <div class="metric-group">
       <h3>Physicochemical</h3>
-      {_metric("GRAVY", f"{gravy:.3f}", gravy_css)}
-      {_metric("Net Charge (pH 7.4)", f"{charge:+.1f}", charge_css)}
-      {_metric("Isoelectric Point", f"{m.get('pI', 0):.2f}", "")}
+{_char_ph_metric(m, _metric)}
+      {_metric("Aromaticity", f"{m.get('aromaticity', 0):.3f}", "")}
       {_metric("Cysteines", f"{m.get('cys_count', 0)}", "")}
 {_char_disulfide_metric(m, _metric)}
-{_char_ph_metric(m, _metric)}
 {_char_colloidal_metric(m, _metric)}
     </div>
 
@@ -1945,13 +1933,13 @@ def _step_details_section(results: dict[str, StepResult]) -> str:
 
         for step_name in steps:
             result = results[step_name]
-            parts.append(_render_step_card(step_name, result))
+            parts.append(_render_step_card(step_name, result, results))
 
     parts.append('</div><!-- /section -->')
     return "\n".join(parts)
 
 
-def _render_step_card(step_name: str, result: StepResult) -> str:
+def _render_step_card(step_name: str, result: StepResult, all_results: dict | None = None) -> str:
     """Render a single step as a collapsible <details> card."""
     n_variants = len([c for c in result.candidates if c.parent_id is not None])
     has_warnings = len(result.warnings) > 0
@@ -1995,7 +1983,7 @@ def _render_step_card(step_name: str, result: StepResult) -> str:
         open_attr = " open" if n_variants > 0 else ""
 
     # Render inner content
-    inner = _render_step_inner(step_name, result)
+    inner = _render_step_inner(step_name, result, all_results)
 
     return f"""
 <details class="sd-card"{open_attr}>
@@ -2009,8 +1997,10 @@ def _render_step_card(step_name: str, result: StepResult) -> str:
 </details>"""
 
 
-def _render_step_inner(step_name: str, result: StepResult) -> str:
+def _render_step_inner(step_name: str, result: StepResult, all_results: dict | None = None) -> str:
     """Dispatch to per-step renderer."""
+    if step_name == "mutation_optimizer":
+        return _render_mutation_optimizer(result, all_results)
     renderer = _STEP_RENDERERS.get(step_name, _render_generic_step)
     return renderer(result)
 
@@ -2786,6 +2776,104 @@ def _render_esm_score(result: StepResult) -> str:
 <tbody>{''.join(rows)}</tbody>
 </table>
 </div>"""
+
+
+def _render_mutation_optimizer(result: StepResult, all_results: dict | None = None) -> str:
+    """Renderer for the multi-mutation combinatorial optimizer step."""
+    parent = next((c for c in result.candidates if c.parent_id is None), None)
+    if not parent:
+        return '<p class="sd-summary">No optimizer data available.</p>'
+
+    summary = parent.metadata.get("optimizer_summary", {})
+    evidence_table = parent.metadata.get("mutation_evidence_table", [])
+    multi_table = parent.metadata.get("multi_mutant_table", [])
+
+    n_pool = summary.get("n_pool", 0)
+    n_combos = summary.get("n_combinations", 0)
+    wt_e1 = summary.get("wt_e1", 0)
+    best_e1 = summary.get("best_e1")
+    best_muts = summary.get("best_mutations", [])
+    max_order = summary.get("max_order", 5)
+
+    delta_str = ""
+    if best_e1 is not None and wt_e1:
+        delta_str = f" (Δ = {best_e1 - wt_e1:+.4f} vs WT)"
+
+    summary_html = (
+        f'<p class="sd-summary">Pooled <strong>{n_pool}</strong> top mutations, '
+        f'evaluated <strong>{n_combos:,}</strong> combinations up to order {max_order}.'
+        + (f' Best: <span class="mono">{_html.escape(", ".join(best_muts))}</span>'
+           f' E1 = <strong class="good">{best_e1:.4f}</strong>{delta_str}.</p>'
+           if best_e1 is not None else '</p>')
+    )
+
+    # Build label → e1_fitness lookup from e1_score step
+    e1_lookup: dict[str, float] = {}
+    if all_results and "e1_score" in all_results:
+        for c in all_results["e1_score"].candidates:
+            if c.parent_id is not None and len(c.mutations) == 1:
+                e1_val = c.scores.get("e1_fitness")
+                if e1_val is not None:
+                    e1_lookup[c.mutations[0].label] = e1_val
+
+    # Evidence table (single mutations) — ranked by E1 value
+    ev_html = ""
+    if evidence_table:
+        enriched = []
+        for e in evidence_table:
+            e1_val = e1_lookup.get(e.get("label", ""))
+            enriched.append({**e, "_e1": e1_val})
+        enriched.sort(key=lambda x: x["_e1"] if x["_e1"] is not None else float("-inf"), reverse=True)
+        ev_rows = ""
+        for e in enriched[:20]:
+            src = ", ".join(s.replace("_", " ").title() for s in e.get("evidence_sources", []))
+            e1_val = e["_e1"]
+            ddg = e.get("ddg")
+            dsol = e.get("delta_solubility")
+            e1_css = "good" if (e1_val or 0) > (wt_e1 or 0) else "bad"
+            ev_rows += (
+                f'<tr><td class="mono">{_html.escape(e.get("label", ""))}</td>'
+                f'<td class="{e1_css}">{f"{e1_val:.4f}" if e1_val is not None else "—"}</td>'
+                f'<td>{f"{ddg:.3f}" if ddg is not None else "—"}</td>'
+                f'<td>{f"{dsol:.3f}" if dsol is not None else "—"}</td>'
+                f'<td>{e.get("evidence_breadth", 0)}</td>'
+                f'<td>{e.get("evidence_score", 0):.3f}</td>'
+                f'<td style="font-size:0.78rem">{_html.escape(src)}</td></tr>'
+            )
+        ev_html = (
+            '<h4 style="margin:12px 0 6px">Single Mutation Evidence</h4>'
+            '<div class="tbl-wrap"><table class="sd-table">'
+            '<thead><tr><th>Mutation</th><th>E1 Fitness</th><th>ΔΔG</th>'
+            '<th>ΔSol</th><th>Sources</th><th>Score</th><th>Contributing Steps</th></tr></thead>'
+            f'<tbody>{ev_rows}</tbody></table></div>'
+        )
+
+    # Multi-mutant table — sorted by ΔE1 descending, columns: Mutations | N | ΔE1 | Add. ΔΔG
+    mm_html = ""
+    if multi_table:
+        sorted_mm = sorted(multi_table, key=lambda x: x.get("e1_delta", x.get("e1_fitness", 0)), reverse=True)
+        mm_rows = ""
+        for i, entry in enumerate(sorted_mm[:20], 1):
+            muts_str = ", ".join(_html.escape(m) for m in entry.get("mutations", []))
+            delta = entry.get("e1_delta", 0)
+            addddg = entry.get("additive_ddg")
+            e1_css = "good" if delta > 0 else "bad"
+            mm_rows += (
+                f'<tr><td>{i}</td>'
+                f'<td class="mono">{muts_str}</td>'
+                f'<td>{entry.get("n_mutations", 0)}</td>'
+                f'<td class="{e1_css}">{delta:+.4f}</td>'
+                f'<td>{f"{addddg:.3f}" if addddg is not None else "—"}</td></tr>'
+            )
+        mm_html = (
+            '<h4 style="margin:12px 0 6px">Top Multi-Mutant Variants</h4>'
+            '<div class="tbl-wrap"><table class="sd-table">'
+            '<thead><tr><th>#</th><th>Mutations</th><th>N</th>'
+            '<th>ΔE1</th><th>Add. ΔΔG</th></tr></thead>'
+            f'<tbody>{mm_rows}</tbody></table></div>'
+        )
+
+    return summary_html + ev_html + mm_html
 
 
 def _render_generic_step(result: StepResult) -> str:

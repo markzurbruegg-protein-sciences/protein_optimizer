@@ -39,7 +39,7 @@ class E1ScoreStep(BaseStep):
         conda_env = config.get("conda_env", "e1")
 
         run_saturation = config.get("site_saturation", False)
-        top_k_positions = config.get("top_k_positions", 5)
+        top_k_positions = config.get("top_k_positions", 20)
 
         protected = parse_protected_residues(
             config.get("_global", {}).get("protected_residues")
@@ -110,6 +110,7 @@ class E1ScoreStep(BaseStep):
             parent = parent_cands[0] if parent_cands else None
             if parent:
                 parent_score = parent.scores.get("e1_fitness", 0.0)
+                positive_gains = []
                 for sm in sat_mutations:
                     pos = sm["position"]
                     wt_aa = sm["wt"]
@@ -117,6 +118,7 @@ class E1ScoreStep(BaseStep):
                     gain = sm["gain"]
                     if gain <= 0:
                         continue
+                    positive_gains.append(sm)
                     mut = Mutation(
                         position=pos, wt=wt_aa, mut=mut_aa,
                         source_step=self.name, score=gain,
@@ -128,6 +130,15 @@ class E1ScoreStep(BaseStep):
                         candidates.append(variant)
                     except ValueError:
                         pass
+
+                # Store SSM summary in parent metadata
+                positive_gains.sort(key=lambda x: x["gain"], reverse=True)
+                parent.metadata["e1_ssm_summary"] = {
+                    "n_beneficial": len(positive_gains),
+                    "n_total_scanned": len(sat_mutations),
+                    "top_k_positions": top_k_positions,
+                    "top_5_mutations": positive_gains[:5],
+                }
 
         n_scored = sum(1 for c in candidates if "e1_fitness" in c.scores)
         logger.info(f"E1 scored {n_scored}/{len(candidates)} candidates")
